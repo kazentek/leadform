@@ -1,6 +1,6 @@
 /**
  * GET /api/ping
- * Lightweight keepalive endpoint
+ * Lightweight keepalive endpoint.
  * Called every 5 minutes by an external pinger to prevent cold starts
  */
 module.exports = function handler(req, res) {
