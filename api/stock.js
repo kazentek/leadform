@@ -1,36 +1,72 @@
 /**
  * GET /api/stock?variant_id=XXXX
- * Returns real-time inventory level from Shopify
+ * CommonJS — works with Vercel Node.js runtime out of the box
  */
 
-export default async function handler(req, res) {
+let cachedToken = null;
+let tokenExpiresAt = 0;
+
+async function getAccessToken() {
+  if (cachedToken && Date.now() < tokenExpiresAt - 300000) {
+    return cachedToken;
+  }
+  const resp = await fetch(
+    `https://${process.env.SHOP_DOMAIN}/admin/oauth/access_token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: process.env.SHOP_CLIENT_ID,
+        client_secret: process.env.SHOP_CLIENT_SECRET,
+        grant_type: "client_credentials",
+      }),
+    }
+  );
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Token error ${resp.status}: ${err}`);
+  }
+  const data = await resp.json();
+  cachedToken = data.access_token;
+  tokenExpiresAt = Date.now() + (data.expires_in || 86400) * 1000;
+  return cachedToken;
+}
+
+function setCORS(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Cache-Control", "no-store");
+}
+
+module.exports = async function handler(req, res) {
+  setCORS(res);
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const { SHOP_DOMAIN, SHOP_TOKEN } = process.env;
-
-  if (!SHOP_DOMAIN || !SHOP_TOKEN) {
+  const { SHOP_DOMAIN } = process.env;
+  if (!SHOP_DOMAIN) {
     return res.status(500).json({ error: "Server misconfigured" });
   }
 
   const { variant_id } = req.query;
-
   if (!variant_id) {
     return res.status(400).json({ error: "variant_id is required" });
   }
 
+  let token;
   try {
-    // Fetch variant to get inventory_item_id and inventory_quantity
+    token = await getAccessToken();
+  } catch (err) {
+    console.error("Token fetch failed:", err.message);
+    return res.status(500).json({ error: "Auth failed: " + err.message });
+  }
+
+  try {
     const varResp = await fetch(
       `https://${SHOP_DOMAIN}/admin/api/2024-01/variants/${variant_id}.json`,
       {
-        headers: {
-          "X-Shopify-Access-Token": SHOP_TOKEN,
-          "Content-Type": "application/json",
-        },
+        headers: { "X-Shopify-Access-Token": token, "Content-Type": "application/json" },
       }
     );
 
@@ -39,22 +75,13 @@ export default async function handler(req, res) {
     }
 
     const { variant } = await varResp.json();
+    const inventory = variant.inventory_management === "shopify"
+      ? (variant.inventory_quantity != null ? variant.inventory_quantity : 99)
+      : 99;
 
-    // Use inventory_quantity directly (fastest, no extra call)
-    const inventory =
-      variant.inventory_management === "shopify"
-        ? variant.inventory_quantity ?? 99
-        : 99; // unlimited if not tracked
-
-    return res.status(200).json({
-      variant_id: variant.id,
-      inventory,
-      available: inventory > 0,
-      sku: variant.sku || null,
-      title: variant.title || null,
-    });
+    return res.status(200).json({ variant_id: variant.id, inventory, available: inventory > 0, sku: variant.sku || null });
   } catch (err) {
-    console.error("Stock fetch error:", err);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Stock error:", err);
+    return res.status(500).json({ error: "Internal server error: " + err.message });
   }
-}
+};
