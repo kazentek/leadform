@@ -1,8 +1,10 @@
 /**
  * POST /api/create-order
- * CommonJS — Vercel Node.js runtime
+ * Optimized: token cached globally, customer lookup only on conflict
+ * Target: <4s per request
  */
 
+// ── Global token cache (survives warm instances) ──
 let cachedToken = null;
 let tokenExpiresAt = 0;
 
@@ -34,6 +36,16 @@ function setCORS(res) {
   res.setHeader("Access-Control-Max-Age", "86400");
 }
 
+async function findCustomerByPhone(phone, apiBase, headers) {
+  const resp = await fetch(
+    `${apiBase}/customers/search.json?query=phone:${encodeURIComponent(phone)}&limit=1&fields=id`,
+    { headers }
+  );
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return data.customers?.[0]?.id || null;
+}
+
 module.exports = async function handler(req, res) {
   setCORS(res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -46,7 +58,7 @@ module.exports = async function handler(req, res) {
   try {
     body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
   } catch (e) {
-    return res.status(400).json({ error: "Invalid JSON body" });
+    return res.status(400).json({ error: "Invalid JSON" });
   }
 
   const {
@@ -61,10 +73,12 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  if (!/^0[5-7]\d{8}$/.test(phone.replace(/\s/g, ""))) {
+  const cleanPhone = phone.replace(/\s/g, "");
+  if (!/^0[5-7]\d{8}$/.test(cleanPhone)) {
     return res.status(400).json({ error: "Invalid phone number" });
   }
 
+  // ── Get token (cached, fast on warm instances) ──
   let token;
   try {
     token = await getAccessToken();
@@ -74,69 +88,22 @@ module.exports = async function handler(req, res) {
 
   const firstName = customer_name.split(" ")[0] || customer_name;
   const lastName = customer_name.split(" ").slice(1).join(" ") || ".";
-  const cleanPhone = phone.replace(/\s/g, "");
   const addr = address || `${commune}, ${wilaya}`;
-  const headers = { "Content-Type": "application/json", "X-Shopify-Access-Token": token };
   const apiBase = `https://${SHOP_DOMAIN}/admin/api/2024-01`;
+  const headers = { "Content-Type": "application/json", "X-Shopify-Access-Token": token };
 
-  // ── Find or create customer by phone ──
-  let customerId = null;
-  try {
-    const searchResp = await fetch(
-      `${apiBase}/customers/search.json?query=phone:${cleanPhone}&limit=1`,
-      { headers }
-    );
-    if (searchResp.ok) {
-      const searchData = await searchResp.json();
-      if (searchData.customers && searchData.customers.length > 0) {
-        customerId = searchData.customers[0].id;
-      }
-    }
-  } catch (e) {
-    console.warn("Customer search failed, proceeding without customer:", e.message);
-  }
-
-  // Create new customer only if not found
-  if (!customerId) {
-    try {
-      const createResp = await fetch(`${apiBase}/customers.json`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          customer: {
-            first_name: firstName,
-            last_name: lastName,
-            phone: cleanPhone,
-            verified_email: false,
-            accepts_marketing: false,
-          },
-        }),
-      });
-      if (createResp.ok) {
-        const createData = await createResp.json();
-        customerId = createData.customer?.id || null;
-      }
-    } catch (e) {
-      console.warn("Customer creation failed, proceeding as guest:", e.message);
-    }
-  }
-
-  // ── Build order payload ──
-  const shopifyOrder = {
-    order: {
+  // ── Build base order (no customer attached yet) ──
+  function buildOrder(customerId) {
+    const order = {
       line_items: [{ variant_id: Number(variant_id), quantity: Number(quantity), price: String(product_price) }],
       shipping_address: { first_name: firstName, last_name: lastName, phone: cleanPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
       billing_address:  { first_name: firstName, last_name: lastName, phone: cleanPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
       financial_status: "pending",
       send_receipt: false,
       send_fulfillment_receipt: false,
-      note: `COD | ${wilaya} | ${commune} | ${delivery_type === "home" ? "Domicile" : "Stop Desk"} | Shipping: ${shipping_cost} ${cur}`,
+      note: `COD | ${wilaya} | ${commune} | ${delivery_type === "home" ? "Domicile" : "Stop Desk"} | ${shipping_cost} ${cur}`,
       tags: `COD, ${delivery_type === "home" ? "home-delivery" : "stop-desk"}, ${wilaya}`,
-      shipping_lines: [{
-        title: delivery_type === "home" ? "Livraison à Domicile" : "Stop Desk",
-        price: String(shipping_cost),
-        code: delivery_type === "home" ? "HOME" : "STOPDESK",
-      }],
+      shipping_lines: [{ title: delivery_type === "home" ? "Livraison à Domicile" : "Stop Desk", price: String(shipping_cost), code: delivery_type === "home" ? "HOME" : "STOPDESK" }],
       note_attributes: [
         { name: "wilaya", value: wilaya },
         { name: "commune", value: commune },
@@ -146,29 +113,57 @@ module.exports = async function handler(req, res) {
       ],
       currency: cur,
       suppress_notifications: true,
-    },
-  };
-
-  // Attach customer if we have one
-  if (customerId) {
-    shopifyOrder.order.customer = { id: customerId };
+    };
+    if (customerId) order.customer = { id: customerId };
+    return { order };
   }
 
+  // ── Strategy: try creating with new customer first ──
+  // If phone conflict → find existing → retry with their ID
+  // This is FASTER than always searching first (saves 1 round trip for new customers)
+
+  let customerId = null;
+
+  // Step 1: Try to create customer (fast path for new customers)
   try {
-    const shopResp = await fetch(`${apiBase}/orders.json`, {
+    const createResp = await fetch(`${apiBase}/customers.json`, {
       method: "POST",
       headers,
-      body: JSON.stringify(shopifyOrder),
+      body: JSON.stringify({
+        customer: {
+          first_name: firstName, last_name: lastName,
+          phone: cleanPhone,
+          verified_email: false, accepts_marketing: false,
+        },
+      }),
+    });
+    if (createResp.ok) {
+      const data = await createResp.json();
+      customerId = data.customer?.id || null;
+    } else {
+      // Phone already taken — find existing customer
+      customerId = await findCustomerByPhone(cleanPhone, apiBase, headers);
+    }
+  } catch (e) {
+    console.warn("Customer step failed, proceeding as guest:", e.message);
+  }
+
+  // Step 2: Create the order
+  try {
+    const orderResp = await fetch(`${apiBase}/orders.json`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(buildOrder(customerId)),
     });
 
-    const shopData = await shopResp.json();
+    const orderData = await orderResp.json();
 
-    if (!shopResp.ok) {
-      console.error("Shopify error:", JSON.stringify(shopData));
-      return res.status(502).json({ error: "Order creation failed", details: shopData.errors || shopData });
+    if (!orderResp.ok) {
+      console.error("Shopify order error:", JSON.stringify(orderData));
+      return res.status(502).json({ error: "Order creation failed", details: orderData.errors });
     }
 
-    const order = shopData.order;
+    const order = orderData.order;
     return res.status(200).json({
       success: true,
       order_id: order.name,
@@ -176,7 +171,7 @@ module.exports = async function handler(req, res) {
       order: { id: order.id, name: order.name, total_price: order.total_price, financial_status: order.financial_status },
     });
   } catch (err) {
-    console.error("Server error:", err);
+    console.error("Order error:", err);
     return res.status(500).json({ error: "Internal server error: " + err.message });
   }
 };
