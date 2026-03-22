@@ -1,4 +1,11 @@
-[
+/**
+ * GET /api/communes
+ * Serves the full Algeria communes dataset.
+ * Paste your full JSON array into the `communes` variable below.
+ */
+
+// ─── PASTE YOUR FULL algeria-communes.json ARRAY HERE ───────────────────────
+const communes = [
     {
         "id": 22,
         "commune_name_ascii": "Timekten",
@@ -15409,4 +15416,20 @@
         "wilaya_name_ascii": "El Menia",
         "wilaya_name": "المنيعة"
     }
-]
+];
+
+export default function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  // Cache for 24h — communes don't change
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  return res.status(200).json(communes);
+}
+
+
+
+
+
