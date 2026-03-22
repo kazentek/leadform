@@ -15418,16 +15418,19 @@ const communes = [
     }
 ];
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  // Cache for 24h — communes don't change
   res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
-
+ 
   if (req.method === "OPTIONS") return res.status(200).end();
-
-  return res.status(200).json(communes);
-}
+ 
+  const slim = communes.map(function(c) {
+    return { wilaya_name_ascii: c.wilaya_name_ascii, commune_name_ascii: c.commune_name_ascii };
+  });
+ 
+  return res.status(200).json(slim);
+};
 
 
 
