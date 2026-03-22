@@ -77,7 +77,7 @@ const CONFIG = {
     Tissemsilt: { stopdesk: 400, home: 550 },
     "El Oued": { stopdesk: 450, home: 650 },
     Khenchela: { stopdesk: 400, home: 550 },
-    Souk Ahras: { stopdesk: 400, home: 550 },
+    "Souk Ahras": { stopdesk: 400, home: 550 },
     Tipaza: { stopdesk: 250, home: 400 },
     Mila: { stopdesk: 350, home: 500 },
     "Ain Defla": { stopdesk: 300, home: 450 },
