@@ -24,18 +24,14 @@
     ? currentScript.src.split("/embed.js")[0]
     : "";
 
-  const CONFIG = {
-    variantId:
-      currentScript.dataset.variantId ||
-      (typeof variantId !== "undefined" ? variantId : null),
-    price:
-      parseFloat(currentScript.dataset.price) ||
-      (typeof productPrice !== "undefined" ? productPrice : 2500),
-    productTitle: currentScript.dataset.productTitle || "Votre Produit",
-    currency: currentScript.dataset.currency || "DZD",
-    apiBase: BASE_URL || "https://your-app.vercel.app",
-    defaultWilaya: "Alger",
-  };
+const CONFIG = {
+  variantId: window.__COD_CONFIG__?.variantId || null,
+  price: window.__COD_CONFIG__?.price || 2500,
+  productTitle: window.__COD_CONFIG__?.productTitle || "Votre Produit",
+  currency: window.__COD_CONFIG__?.currency || "DZD",
+  apiBase: window.__COD_CONFIG__?.apiBase || "https://leadform-ebth.vercel.app",
+  defaultWilaya: "Alger",
+};
 
   /* ─────────────────────────────────────────────
      SHIPPING PRICES  (wilaya → stop desk / home)
