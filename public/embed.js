@@ -1,6 +1,6 @@
 /**
  * COD Lead Form System — Algeria
- * Premium redesign v2
+ * Premium Redesign v3 (High-Converting, Clean UI)
  */
 (function () {
   "use strict";
@@ -21,7 +21,6 @@
     defaultWilaya: "Alger",
   };
 
-  // Override with window config if present
   if (window.__COD_CONFIG__) {
     Object.assign(CONFIG, window.__COD_CONFIG__);
   }
@@ -57,666 +56,572 @@
     timerSecs: 900,
   };
 
-  /* ── CSS ── */
+  /* ── PREMIUM CSS ── */
   function injectStyles() {
     const style = document.createElement("style");
     style.textContent = `
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-      #cod-form-root, #cod-form-root * {
+      #cod-form-root {
+        all: initial;
+        display: block;
+        width: 100%;
+        max-width: 520px;
+        margin: 0 auto;
         box-sizing: border-box;
-        margin: 0; padding: 0;
         font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
-      }
-
-      #cod-form-root {
-        width: 100%;
-        background: #fff;
-        border-radius: 24px;
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1px solid #E5E7EB;
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
         overflow: hidden;
-        border: 1px solid #f0f0f0;
-        box-shadow: 0 4px 32px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
-        animation: codSlideUp 0.4s cubic-bezier(0.34,1.2,0.64,1) both;
       }
 
-      @keyframes codSlideUp {
-        from { opacity:0; transform:translateY(20px); }
-        to   { opacity:1; transform:translateY(0); }
+      #cod-form-root * {
+        box-sizing: border-box;
       }
 
       /* ── HEADER ── */
       .cod-header {
-        background: linear-gradient(135deg, #111118 0%, #1e1e2e 100%);
-        padding: 22px 24px 20px;
-        position: relative;
-        overflow: hidden;
+        padding: 28px 24px 20px;
+        text-align: center;
+        background: #ffffff;
+        border-bottom: 1px solid #F3F4F6;
       }
-      .cod-header::after {
-        content: '';
-        position: absolute;
-        top: -60px; right: -60px;
-        width: 180px; height: 180px;
-        background: radial-gradient(circle, rgba(255,77,48,0.35) 0%, transparent 70%);
-        pointer-events: none;
+      
+      .cod-trust-badges {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 16px;
       }
-      .cod-header::before {
-        content: '';
-        position: absolute;
-        bottom: -40px; left: -20px;
-        width: 120px; height: 120px;
-        background: radial-gradient(circle, rgba(255,149,0,0.2) 0%, transparent 70%);
-        pointer-events: none;
-      }
-      .cod-header-eyebrow {
-        display: inline-flex;
+      
+      .cod-trust-badge {
+        display: flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255,77,48,0.18);
-        border: 1px solid rgba(255,77,48,0.3);
-        color: #ff7a5c;
         font-size: 11px;
         font-weight: 700;
-        letter-spacing: 0.8px;
         text-transform: uppercase;
-        padding: 4px 10px;
-        border-radius: 20px;
-        margin-bottom: 10px;
-        position: relative;
+        letter-spacing: 0.5px;
+        color: #059669;
+        background: #ECFDF5;
+        padding: 6px 10px;
+        border-radius: 8px;
       }
-      .cod-header-title {
-        font-size: 19px;
+
+      .cod-title {
+        font-size: 22px;
         font-weight: 800;
-        color: #fff;
-        line-height: 1.25;
-        position: relative;
-        letter-spacing: -0.3px;
+        color: #111827;
+        margin: 0 0 6px 0;
+        letter-spacing: -0.5px;
       }
-      .cod-header-sub {
-        font-size: 12.5px;
-        color: rgba(255,255,255,0.45);
-        margin-top: 4px;
-        font-weight: 400;
-        position: relative;
+      
+      .cod-subtitle {
+        font-size: 14px;
+        color: #6B7280;
+        margin: 0;
+        font-weight: 500;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      /* ── URGENCY STRIP ── */
+      /* ── URGENCY STRIP (Subtle) ── */
       .cod-urgency {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        background: #fff8f5;
-        border-bottom: 1px solid #ffe8e0;
-        padding: 9px 20px;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .cod-urgency-item {
-        display: flex;
         align-items: center;
-        gap: 6px;
+        background: #F9FAFB;
+        padding: 12px 24px;
+        border-bottom: 1px solid #F3F4F6;
         font-size: 12px;
         font-weight: 600;
-        color: #cc3a1e;
+        color: #4B5563;
       }
-      .cod-live-pulse {
-        width: 7px; height: 7px;
-        background: #ff4d30;
-        border-radius: 50%;
-        flex-shrink: 0;
-        animation: codPulse 1.5s ease-in-out infinite;
-        box-shadow: 0 0 0 0 rgba(255,77,48,0.4);
-      }
-      @keyframes codPulse {
-        0%   { box-shadow: 0 0 0 0 rgba(255,77,48,0.5); }
-        70%  { box-shadow: 0 0 0 6px rgba(255,77,48,0); }
-        100% { box-shadow: 0 0 0 0 rgba(255,77,48,0); }
-      }
-      .cod-timer-badge {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        background: #fff0ec;
-        border: 1px solid #ffd4c9;
-        border-radius: 8px;
-        padding: 4px 10px;
-        font-size: 12px;
-        font-weight: 700;
-        color: #cc3a1e;
-      }
-      .cod-timer { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
 
-      /* ── TRUST BADGES ── */
-      .cod-trust {
-        display: flex;
-        gap: 8px;
-        padding: 14px 20px 0;
-        flex-wrap: wrap;
-      }
-      .cod-badge {
+      .cod-live-group {
         display: flex;
         align-items: center;
-        gap: 6px;
-        background: #f0faf5;
-        color: #00966b;
-        border: 1px solid #c8edd9;
-        border-radius: 10px;
-        padding: 6px 12px;
-        font-size: 12px;
-        font-weight: 600;
-        flex-shrink: 0;
+        gap: 8px;
       }
-      .cod-badge-dot {
-        width: 6px; height: 6px;
-        background: #00b67a;
+
+      .cod-pulse {
+        width: 8px; height: 8px;
+        background: #EF4444;
         border-radius: 50%;
-        flex-shrink: 0;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        animation: pulseLive 2s infinite;
+      }
+
+      @keyframes pulseLive {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      }
+
+      .cod-timer {
+        color: #DC2626;
+        background: #FEF2F2;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-variant-numeric: tabular-nums;
       }
 
       /* ── BODY ── */
       .cod-body {
-        padding: 16px 20px 20px;
+        padding: 24px;
         display: flex;
         flex-direction: column;
-        gap: 13px;
+        gap: 20px;
       }
 
       /* ── FIELDS ── */
-      .cod-field {
+      .cod-field-group {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
       }
+
       .cod-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 16px;
       }
+
       .cod-label {
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 700;
-        color: #444;
-        letter-spacing: 0.2px;
+        color: #374151;
       }
+
       .cod-input, .cod-select {
         width: 100%;
-        height: 48px;
-        padding: 0 14px;
-        background: #f7f7f9;
-        border: 1.5px solid #ebebeb;
+        height: 52px;
+        padding: 0 16px;
+        background: #F9FAFB;
+        border: 1px solid #E5E7EB;
         border-radius: 12px;
-        font-size: 14px;
-        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        font-size: 15px;
+        font-family: inherit;
         font-weight: 500;
-        color: #111;
+        color: #111827;
         outline: none;
-        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+        transition: all 0.2s ease;
         appearance: none;
         -webkit-appearance: none;
       }
+
       .cod-select {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath d='M1 1l4.5 5L10 1' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 14px center;
-        padding-right: 36px;
+        background-position: right 16px center;
+        background-size: 16px;
         cursor: pointer;
+        padding-right: 40px;
       }
+
+      .cod-input:hover, .cod-select:hover {
+        border-color: #D1D5DB;
+      }
+
       .cod-input:focus, .cod-select:focus {
-        border-color: #ff4d30;
-        background: #fff;
-        box-shadow: 0 0 0 3.5px rgba(255,77,48,0.10);
+        border-color: #FF5A1F;
+        background: #FFFFFF;
+        box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.1);
       }
-      .cod-input::placeholder { color: #bbb; font-weight: 400; }
+
+      .cod-input::placeholder { color: #9CA3AF; font-weight: 400; }
+
       .cod-input.cod-error, .cod-select.cod-error {
-        border-color: #ff4d30;
-        background: #fff5f3;
-        box-shadow: 0 0 0 3px rgba(255,77,48,0.08);
+        border-color: #EF4444;
+        background: #FEF2F2;
       }
+
       .cod-error-msg {
-        font-size: 11.5px;
-        color: #e03018;
+        font-size: 12px;
+        color: #EF4444;
         font-weight: 600;
         display: none;
-        align-items: center;
-        gap: 4px;
+        margin-top: -4px;
       }
-      .cod-error-msg.visible { display: flex; }
+      .cod-error-msg.visible { display: block; }
 
       /* ── DELIVERY CARDS ── */
       .cod-delivery-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 12px;
       }
+
       .cod-delivery-option { position: relative; cursor: pointer; }
       .cod-delivery-option input { position: absolute; opacity: 0; pointer-events: none; }
+      
       .cod-delivery-card {
         display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 13px 14px;
-        border: 1.5px solid #ebebeb;
-        border-radius: 14px;
-        background: #f7f7f9;
-        transition: all 0.15s ease;
-        cursor: pointer;
+        flex-direction: column;
+        justify-content: center;
+        gap: 6px;
+        padding: 16px;
+        border: 2px solid #E5E7EB;
+        border-radius: 16px;
+        background: #ffffff;
+        transition: all 0.2s ease;
+        height: 100%;
       }
-      .cod-delivery-icon {
-        width: 36px; height: 36px;
-        border-radius: 10px;
-        background: #ebebeb;
+
+      .cod-del-top {
         display: flex;
         align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        transition: background 0.15s ease;
-      }
-      .cod-delivery-info { flex: 1; min-width: 0; }
-      .cod-delivery-name {
-        font-size: 13px;
+        gap: 8px;
+        font-size: 14px;
         font-weight: 700;
-        color: #111;
-        line-height: 1;
+        color: #111827;
       }
+
+      .cod-del-icon {
+        color: #6B7280;
+        display: flex;
+      }
+
       .cod-delivery-price {
-        font-size: 12px;
-        color: #999;
-        font-weight: 500;
-        margin-top: 3px;
+        font-size: 13px;
+        color: #6B7280;
+        font-weight: 600;
       }
+
       .cod-delivery-option input:checked + .cod-delivery-card {
-        border-color: #ff4d30;
-        background: #fff5f3;
-        box-shadow: 0 0 0 3px rgba(255,77,48,0.08);
+        border-color: #FF5A1F;
+        background: #FFF9F7;
       }
-      .cod-delivery-option input:checked + .cod-delivery-card .cod-delivery-icon {
-        background: rgba(255,77,48,0.12);
+      
+      .cod-delivery-option input:checked + .cod-delivery-card .cod-del-icon {
+        color: #FF5A1F;
       }
+      
       .cod-delivery-option input:checked + .cod-delivery-card .cod-delivery-price {
-        color: #e03018;
-        font-weight: 700;
+        color: #FF5A1F;
       }
 
-      /* ── QTY + PRICE ── */
-      .cod-qty-price-row {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 12px;
-        align-items: start;
+      /* ── QUANTITY AND SUMMARY ── */
+      .cod-summary-section {
+        background: #F9FAFB;
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid #E5E7EB;
       }
-      .cod-qty-wrapper {
-        display: flex;
-        align-items: center;
-        background: #f7f7f9;
-        border: 1.5px solid #ebebeb;
-        border-radius: 12px;
-        overflow: hidden;
-        height: 48px;
-        width: 120px;
-      }
-      .cod-qty-btn {
-        width: 42px; height: 100%;
-        background: none; border: none;
-        cursor: pointer;
-        font-size: 20px;
-        font-weight: 300;
-        color: #555;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.12s ease, color 0.12s ease;
-        flex-shrink: 0;
-        line-height: 1;
-      }
-      .cod-qty-btn:hover:not(:disabled) { background: #ebebeb; color: #ff4d30; }
-      .cod-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-      .cod-qty-input {
-        flex: 1; text-align: center; height: 100%;
-        border: none; background: none;
-        font-size: 16px; font-weight: 700; color: #111;
-        outline: none;
-        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-        width: 0;
-      }
-      .cod-stock-warn {
-        font-size: 11px; color: #ff9500; font-weight: 700;
-        display: none; align-items: center; gap: 4px; margin-top: 4px;
-      }
-      .cod-stock-warn.visible { display: flex; }
 
-      /* ── PRICE SUMMARY ── */
-      .cod-price-summary {
-        background: #f7f7f9;
-        border: 1.5px solid #ebebeb;
-        border-radius: 14px;
-        overflow: hidden;
-      }
-      .cod-price-line {
+      .cod-qty-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 9px 14px;
-        font-size: 13px;
-        border-bottom: 1px solid #ebebeb;
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+        border-bottom: 1px dashed #D1D5DB;
       }
-      .cod-price-line:last-child { border-bottom: none; }
+
+      .cod-qty-label {
+        font-weight: 700;
+        color: #374151;
+        font-size: 14px;
+      }
+
+      .cod-qty-wrapper {
+        display: flex;
+        align-items: center;
+        background: #FFFFFF;
+        border: 1px solid #E5E7EB;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 40px;
+      }
+
+      .cod-qty-btn {
+        width: 40px; height: 100%;
+        background: none; border: none;
+        cursor: pointer;
+        font-size: 18px;
+        color: #4B5563;
+        display: flex; align-items: center; justify-content: center;
+        transition: 0.2s;
+      }
+      
+      .cod-qty-btn:hover:not(:disabled) { background: #F3F4F6; color: #111827; }
+      .cod-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+      
+      .cod-qty-input {
+        width: 40px; text-align: center;
+        border: none; background: none;
+        font-size: 15px; font-weight: 700; color: #111827;
+        font-family: inherit; pointer-events: none;
+      }
+
+      .cod-price-line {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        color: #4B5563;
+        margin-bottom: 12px;
+      }
+      
+      .cod-price-line:last-child { margin-bottom: 0; }
+      
+      .cod-price-val { font-weight: 600; color: #111827; }
+      
       .cod-price-line.total {
-        background: #111118;
-        padding: 12px 14px;
-        border-bottom: none;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #E5E7EB;
+        font-size: 18px;
       }
-      .cod-price-key { color: #888; font-weight: 500; }
-      .cod-price-val { font-weight: 700; color: #111; }
-      .cod-price-line.total .cod-price-key { color: rgba(255,255,255,0.6); font-weight: 500; }
-      .cod-price-line.total .cod-price-val { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+      .cod-price-line.total .cod-price-key { color: #111827; font-weight: 800; }
+      .cod-price-line.total .cod-price-val { color: #FF5A1F; font-weight: 800; }
 
-      /* ── ADDRESS ── */
-      /* uses cod-input, cod-field, cod-label */
-
-      /* ── SUBMIT ── */
+      /* ── SUBMIT BUTTON ── */
       .cod-submit-btn {
-        width: 100%; height: 56px;
-        background: linear-gradient(135deg, #ff4d30 0%, #ff6b4a 100%);
+        width: 100%; height: 60px;
+        background: #FF5A1F;
         color: #fff;
         border: none;
         border-radius: 14px;
-        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-        font-size: 16px;
+        font-family: inherit;
+        font-size: 17px;
         font-weight: 800;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 10px;
-        position: relative;
-        overflow: hidden;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-        letter-spacing: -0.2px;
-        box-shadow: 0 4px 16px rgba(255,77,48,0.28), 0 1px 4px rgba(255,77,48,0.15);
+        transition: all 0.2s ease;
+        box-shadow: 0 8px 20px -6px rgba(255, 90, 31, 0.4);
       }
-      .cod-submit-btn::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-        pointer-events: none;
-      }
+      
       .cod-submit-btn:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 8px 28px rgba(255,77,48,0.38), 0 2px 6px rgba(255,77,48,0.2);
+        background: #F0490E;
+        box-shadow: 0 12px 24px -6px rgba(255, 90, 31, 0.5);
       }
-      .cod-submit-btn:active:not(:disabled) { transform: translateY(0); }
-      .cod-submit-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; box-shadow: none; }
+      
+      .cod-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
+      
       .cod-submit-btn.loading .cod-btn-text { display: none; }
       .cod-submit-btn.loading .cod-spinner { display: block; }
+      
       .cod-spinner {
         display: none;
-        width: 22px; height: 22px;
-        border: 2.5px solid rgba(255,255,255,0.35);
+        width: 24px; height: 24px;
+        border: 3px solid rgba(255,255,255,0.3);
         border-top-color: #fff;
         border-radius: 50%;
-        animation: codSpin 0.65s linear infinite;
+        animation: codSpin 0.8s linear infinite;
       }
+      
       @keyframes codSpin { to { transform: rotate(360deg); } }
 
       /* ── FOOTER ── */
       .cod-footer {
-        padding: 12px 20px;
-        text-align: center;
-        font-size: 11.5px;
-        color: #bbb;
-        border-top: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: -4px;
+        padding-bottom: 24px;
+        font-size: 12px;
+        color: #6B7280;
         font-weight: 500;
       }
-      .cod-footer span { color: #00b67a; font-weight: 700; }
+      .cod-footer svg { color: #059669; }
 
-      /* ── SUCCESS ── */
+      /* ── SUCCESS SCREEN ── */
       .cod-success {
         display: none;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 48px 28px 40px;
-        gap: 0;
+        padding: 40px 24px;
         background: #fff;
-        animation: codFadeUp 0.5s ease both;
       }
-      .cod-success.visible { display: flex; }
-      @keyframes codFadeUp {
-        from { opacity:0; transform:translateY(14px); }
-        to   { opacity:1; transform:translateY(0); }
+      
+      .cod-success.visible { display: flex; animation: slideIn 0.4s ease forwards; }
+      
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      .cod-success-ring {
-        width: 88px; height: 88px;
+
+      .cod-success-icon {
+        width: 72px; height: 72px;
+        background: #D1FAE5;
+        color: #059669;
         border-radius: 50%;
-        background: conic-gradient(#00b67a 0deg, #00b67a 360deg);
         display: flex; align-items: center; justify-content: center;
-        margin-bottom: 22px;
-        position: relative;
-        animation: codPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
-      }
-      .cod-success-ring::before {
-        content: '';
-        position: absolute;
-        inset: 4px;
-        background: #fff;
-        border-radius: 50%;
-      }
-      .cod-success-ring svg { position: relative; z-index: 1; }
-      @keyframes codPop {
-        from { transform: scale(0.4); opacity:0; }
-        to   { transform: scale(1); opacity:1; }
-      }
-      .cod-success-title {
-        font-size: 24px; font-weight: 800; color: #111;
-        letter-spacing: -0.5px; line-height: 1.2;
-        margin-bottom: 10px;
-      }
-      .cod-success-sub {
-        font-size: 14px; color: #888; line-height: 1.6;
-        max-width: 260px; font-weight: 400;
-        margin-bottom: 24px;
-      }
-      .cod-success-card {
-        width: 100%; max-width: 280px;
-        background: #f7f7f9;
-        border: 1.5px solid #ebebeb;
-        border-radius: 16px;
-        padding: 18px 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
         margin-bottom: 20px;
       }
-      .cod-success-label { font-size: 11px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-      .cod-success-order-id { font-size: 22px; font-weight: 800; color: #111; letter-spacing: -0.5px; }
-      .cod-success-badges {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-        flex-wrap: wrap;
+
+      .cod-success-title {
+        font-size: 24px; font-weight: 800; color: #111827; margin-bottom: 8px;
       }
-      .cod-success-badge {
-        display: flex; align-items: center; gap: 5px;
-        background: #f0faf5; color: #00966b;
-        border: 1px solid #c8edd9;
-        border-radius: 8px; padding: 6px 12px;
-        font-size: 12px; font-weight: 600;
+      
+      .cod-success-desc {
+        font-size: 15px; color: #6B7280; line-height: 1.5; margin-bottom: 24px;
       }
+
+      .cod-order-box {
+        background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 16px;
+        padding: 20px; width: 100%; max-width: 300px;
+      }
+      
+      .cod-order-label { font-size: 12px; color: #6B7280; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+      .cod-order-val { font-size: 20px; font-weight: 800; color: #111827; }
 
       /* ── RESPONSIVE ── */
       @media (max-width: 480px) {
-        #cod-form-root { border-radius: 16px; }
-        .cod-header { padding: 18px 16px 16px; }
-        .cod-body { padding: 14px 16px 18px; gap: 12px; }
-        .cod-urgency { padding: 8px 16px; }
-        .cod-trust { padding: 12px 16px 0; }
-        .cod-row { grid-template-columns: 1fr 1fr; }
-        .cod-footer { padding: 10px 16px; }
-        .cod-header-title { font-size: 17px; }
-      }
-      @media (max-width: 360px) {
-        .cod-row { grid-template-columns: 1fr; }
-        .cod-delivery-grid { grid-template-columns: 1fr 1fr; }
+        #cod-form-root { border-radius: 16px; border-left: none; border-right: none; }
+        .cod-row { grid-template-columns: 1fr; gap: 12px; }
+        .cod-delivery-grid { grid-template-columns: 1fr; }
+        .cod-header { padding: 24px 20px 16px; }
+        .cod-body { padding: 20px; gap: 16px; }
       }
     `;
     document.head.appendChild(style);
   }
 
-  /* ── HTML ── */
+  /* ── PREMIUM HTML STRUCTURE ── */
   function buildHTML() {
     return `
       <div class="cod-header">
-        <div class="cod-header-eyebrow">
-          <span style="width:6px;height:6px;background:#ff7a5c;border-radius:50%;display:inline-block;"></span>
-          Commande rapide
+        <div class="cod-trust-badges">
+          <div class="cod-trust-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            Paiement à la livraison
+          </div>
+          <div class="cod-trust-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            Livraison 24-72h
+          </div>
         </div>
-        <div class="cod-header-title">Paiement à la Livraison</div>
-        <div class="cod-header-sub">${CONFIG.productTitle}</div>
+        <h2 class="cod-title">Finaliser ma commande</h2>
+        <p class="cod-subtitle">${CONFIG.productTitle}</p>
       </div>
 
       <div class="cod-urgency">
-        <div class="cod-urgency-item">
-          <span class="cod-live-pulse"></span>
-          <span><span id="cod-viewers">${state.viewerCount}</span> personnes voient ceci</span>
+        <div class="cod-live-group">
+          <div class="cod-pulse"></div>
+          <span><span id="cod-viewers" style="color:#111827;font-weight:800;">${state.viewerCount}</span> clients consultent ce produit</span>
         </div>
-        <div class="cod-urgency-item" style="color:#888;font-weight:500;">
-          🛒 <span id="cod-orders">${state.ordersToday}</span> commandes aujourd'hui
-        </div>
-        <div class="cod-timer-badge">
-          ⏱ <span class="cod-timer" id="cod-timer">15:00</span>
-        </div>
-      </div>
-
-      <div class="cod-trust">
-        <div class="cod-badge"><span class="cod-badge-dot"></span> Paiement à la livraison</div>
-        <div class="cod-badge"><span class="cod-badge-dot"></span> Livraison 24–72h</div>
+        <div class="cod-timer" id="cod-timer">15:00</div>
       </div>
 
       <div class="cod-body" id="cod-body">
-
-        <div class="cod-field">
-          <label class="cod-label">Nom complet *</label>
-          <input id="cod-name" class="cod-input" type="text" placeholder="Ahmed Benali" autocomplete="name" />
-          <span class="cod-error-msg" id="cod-name-err">⚠ Veuillez entrer votre nom</span>
+        
+        <div class="cod-field-group">
+          <label class="cod-label">Nom et Prénom *</label>
+          <input id="cod-name" class="cod-input" type="text" placeholder="Ex: Ahmed Benali" autocomplete="name" />
+          <span class="cod-error-msg" id="cod-name-err">Veuillez entrer votre nom complet</span>
         </div>
 
-        <div class="cod-field">
-          <label class="cod-label">Numéro de téléphone *</label>
-          <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="14" />
-          <span class="cod-error-msg" id="cod-phone-err">⚠ Numéro invalide (ex: 0551234567)</span>
+        <div class="cod-field-group">
+          <label class="cod-label">Numéro de Téléphone *</label>
+          <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="14" dir="ltr" />
+          <span class="cod-error-msg" id="cod-phone-err">Numéro invalide (ex: 0551 23 45 67)</span>
         </div>
 
         <div class="cod-row">
-          <div class="cod-field">
+          <div class="cod-field-group">
             <label class="cod-label">Wilaya *</label>
             <select id="cod-wilaya" class="cod-select"></select>
-            <span class="cod-error-msg" id="cod-wilaya-err">⚠ Sélectionnez</span>
+            <span class="cod-error-msg" id="cod-wilaya-err">Sélectionnez une wilaya</span>
           </div>
-          <div class="cod-field">
+          <div class="cod-field-group">
             <label class="cod-label">Commune *</label>
-            <select id="cod-commune" class="cod-select"><option value="">— Commune —</option></select>
-            <span class="cod-error-msg" id="cod-commune-err">⚠ Sélectionnez</span>
+            <select id="cod-commune" class="cod-select"><option value="">Sélectionner</option></select>
+            <span class="cod-error-msg" id="cod-commune-err">Sélectionnez une commune</span>
           </div>
         </div>
 
-        <div class="cod-field">
-          <label class="cod-label">Mode de livraison *</label>
+        <div class="cod-field-group">
+          <label class="cod-label">Mode de Livraison *</label>
           <div class="cod-delivery-grid">
             <label class="cod-delivery-option">
               <input type="radio" name="cod-delivery" value="home" checked />
               <div class="cod-delivery-card">
-                <div class="cod-delivery-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4d30" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <div class="cod-del-top">
+                  <div class="cod-del-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></div>
+                  Domicile
                 </div>
-                <div class="cod-delivery-info">
-                  <div class="cod-delivery-name">Domicile</div>
-                  <div class="cod-delivery-price" id="cod-home-price">— DZD</div>
-                </div>
+                <div class="cod-delivery-price" id="cod-home-price">— DZD</div>
               </div>
             </label>
             <label class="cod-delivery-option">
               <input type="radio" name="cod-delivery" value="stopdesk" />
               <div class="cod-delivery-card">
-                <div class="cod-delivery-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                <div class="cod-del-top">
+                  <div class="cod-del-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+                  Bureau StopDesk
                 </div>
-                <div class="cod-delivery-info">
-                  <div class="cod-delivery-name">Stop Desk</div>
-                  <div class="cod-delivery-price" id="cod-stopdesk-price">— DZD</div>
-                </div>
+                <div class="cod-delivery-price" id="cod-stopdesk-price">— DZD</div>
               </div>
             </label>
           </div>
         </div>
 
-        <div class="cod-qty-price-row">
-          <div class="cod-field">
-            <label class="cod-label">Qté</label>
-            <div class="cod-qty-wrapper">
-              <button class="cod-qty-btn" id="cod-qty-minus" type="button">−</button>
-              <input class="cod-qty-input" id="cod-qty" type="number" value="1" min="1" max="99" readonly />
-              <button class="cod-qty-btn" id="cod-qty-plus" type="button">+</button>
-            </div>
-            <div class="cod-stock-warn" id="cod-stock-warn">⚠ <span id="cod-stock-num">5</span> en stock</div>
-          </div>
-          <div class="cod-field">
-            <label class="cod-label">Récapitulatif</label>
-            <div class="cod-price-summary">
-              <div class="cod-price-line">
-                <span class="cod-price-key">Produit</span>
-                <span class="cod-price-val" id="cod-product-total">—</span>
-              </div>
-              <div class="cod-price-line">
-                <span class="cod-price-key">Livraison</span>
-                <span class="cod-price-val" id="cod-shipping-total">—</span>
-              </div>
-              <div class="cod-price-line total">
-                <span class="cod-price-key">Total</span>
-                <span class="cod-price-val" id="cod-grand-total">—</span>
-              </div>
-            </div>
-          </div>
+        <div class="cod-field-group">
+          <label class="cod-label">Adresse détaillée (Facultatif)</label>
+          <input id="cod-address" class="cod-input" type="text" placeholder="Nom de la rue, numéro de bâtiment..." />
         </div>
 
-        <div class="cod-field">
-          <label class="cod-label">Adresse précise (optionnel)</label>
-          <input id="cod-address" class="cod-input" type="text" placeholder="Rue, quartier, numéro..." />
+        <div class="cod-summary-section">
+          <div class="cod-qty-row">
+            <span class="cod-qty-label">Quantité</span>
+            <div class="cod-qty-wrapper">
+              <button class="cod-qty-btn" id="cod-qty-minus" type="button">−</button>
+              <input class="cod-qty-input" id="cod-qty" type="text" value="1" readonly />
+              <button class="cod-qty-btn" id="cod-qty-plus" type="button">+</button>
+            </div>
+          </div>
+          <div class="cod-price-line">
+            <span class="cod-price-key">Sous-total Produit</span>
+            <span class="cod-price-val" id="cod-product-total">—</span>
+          </div>
+          <div class="cod-price-line">
+            <span class="cod-price-key">Frais de Livraison</span>
+            <span class="cod-price-val" id="cod-shipping-total">—</span>
+          </div>
+          <div class="cod-price-line total">
+            <span class="cod-price-key">Total à Payer</span>
+            <span class="cod-price-val" id="cod-grand-total">—</span>
+          </div>
         </div>
 
         <button class="cod-submit-btn" id="cod-submit" type="button">
-          <span class="cod-btn-text">✓ Confirmer ma commande</span>
+          <span class="cod-btn-text">Confirmer ma commande</span>
           <div class="cod-spinner"></div>
         </button>
-
-      </div>
-
-      <div class="cod-success" id="cod-success">
-        <div class="cod-success-ring">
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#00b67a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <div class="cod-success-title">Commande confirmée !</div>
-        <div class="cod-success-sub">Notre équipe vous contactera dans <strong>24h</strong> pour confirmer la livraison.</div>
-        <div class="cod-success-card">
-          <div class="cod-success-label">Numéro de commande</div>
-          <div class="cod-success-order-id" id="cod-order-id">#COD-000000</div>
-        </div>
-        <div class="cod-success-badges">
-          <div class="cod-success-badge">📦 Préparation en cours</div>
-          <div class="cod-success-badge">💳 Paiement à la livraison</div>
-        </div>
       </div>
 
       <div class="cod-footer">
-        <span>🔒</span> Paiement 100% sécurisé · Retour gratuit sous 7 jours
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Vos données sont sécurisées. Paiement à la réception.
+      </div>
+
+      <div class="cod-success" id="cod-success">
+        <div class="cod-success-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <div class="cod-success-title">Commande Réussie !</div>
+        <div class="cod-success-desc">Merci pour votre confiance. Notre équipe vous appellera dans moins de 24h pour confirmer l'expédition.</div>
+        
+        <div class="cod-order-box">
+          <div class="cod-order-label">Numéro de Commande</div>
+          <div class="cod-order-val" id="cod-order-id">#COD-000000</div>
+        </div>
       </div>
     `;
   }
 
-  /* ── COMMUNES ── */
+  /* ── JS LOGIC (Unchanged from original) ── */
   async function loadCommunes() {
     try {
       const resp = await fetch(`${CONFIG.apiBase}/api/communes`);
@@ -745,11 +650,10 @@
     const sel = document.getElementById("cod-commune");
     if (!sel) return;
     const communes = (COMMUNES_BY_WILAYA[wilaya] || []).slice().sort();
-    sel.innerHTML = `<option value="">— Commune —</option>` + communes.map((c) => `<option value="${c}">${c}</option>`).join("");
+    sel.innerHTML = `<option value="">Sélectionner</option>` + communes.map((c) => `<option value="${c}">${c}</option>`).join("");
     state.commune = "";
   }
 
-  /* ── STOCK ── */
   async function fetchStock() {
     if (!CONFIG.variantId) return;
     try {
@@ -758,18 +662,10 @@
       const { inventory } = await resp.json();
       if (typeof inventory === "number" && inventory > 0) {
         state.maxQty = inventory;
-        const qtyInput = document.getElementById("cod-qty");
-        if (qtyInput) qtyInput.max = inventory;
-        if (inventory <= 5) {
-          const warn = document.getElementById("cod-stock-warn");
-          const num = document.getElementById("cod-stock-num");
-          if (warn && num) { num.textContent = inventory; warn.classList.add("visible"); }
-        }
       }
     } catch (_) {}
   }
 
-  /* ── PRICE CALC ── */
   function calcAndRender() {
     const productTotal = CONFIG.price * state.qty;
     const shipping = SHIPPING[state.wilaya]?.[state.deliveryType] ?? 400;
@@ -786,7 +682,6 @@
 
   function setEl(id, text) { const el = document.getElementById(id); if (el) el.textContent = text; }
 
-  /* ── VALIDATION ── */
   function validate() {
     let valid = true;
     const name = document.getElementById("cod-name");
@@ -808,7 +703,6 @@
     if (err) show ? err.classList.add("visible") : err.classList.remove("visible");
   }
 
-  /* ── SUBMIT ── */
   async function handleSubmit() {
     if (state.submitting || state.submitted) return;
     if (!validate()) return;
@@ -841,7 +735,7 @@
       if (btn) {
         btn.classList.remove("loading"); btn.disabled = false;
         const txt = btn.querySelector(".cod-btn-text");
-        if (txt) { txt.textContent = "⚠ Erreur — Réessayer"; setTimeout(() => { if (txt) txt.textContent = "✓ Confirmer ma commande"; }, 3000); }
+        if (txt) { txt.textContent = "Erreur — Réessayer"; setTimeout(() => { if (txt) txt.textContent = "Confirmer ma commande"; }, 3000); }
       }
       state.submitting = false;
     }
@@ -849,15 +743,16 @@
 
   function showSuccess(orderId) {
     const body = document.getElementById("cod-body");
+    const footer = document.querySelector(".cod-footer");
     const success = document.getElementById("cod-success");
     const orderIdEl = document.getElementById("cod-order-id");
     if (body) body.style.display = "none";
+    if (footer) footer.style.display = "none";
     if (success) success.classList.add("visible");
     if (orderIdEl) orderIdEl.textContent = orderId;
     clearInterval(timerInterval);
   }
 
-  /* ── PHONE FORMAT ── */
   function formatPhone(input) {
     let v = input.value.replace(/\D/g,"").slice(0,10);
     let f = "";
@@ -865,7 +760,6 @@
     input.value = f;
   }
 
-  /* ── TIMER ── */
   let timerInterval;
   function startTimer() {
     timerInterval = setInterval(() => {
@@ -878,18 +772,13 @@
     }, 1000);
   }
 
-  /* ── LIVE COUNTERS ── */
   function animateCounters() {
     setInterval(() => {
       state.viewerCount = Math.max(3, Math.min(35, state.viewerCount + (Math.random()<0.5?-1:1)));
       setEl("cod-viewers", state.viewerCount);
     }, 4500);
-    setInterval(() => {
-      if (Math.random()<0.3) { state.ordersToday++; setEl("cod-orders", state.ordersToday); }
-    }, 8000);
   }
 
-  /* ── BIND ── */
   function bindEvents() {
     const wilaySel = document.getElementById("cod-wilaya");
     if (wilaySel) wilaySel.addEventListener("change", (e) => { state.wilaya=e.target.value; populateCommunes(state.wilaya); calcAndRender(); });
@@ -915,7 +804,6 @@
     if (plus) plus.disabled = state.qty >= state.maxQty;
   }
 
-  /* ── INIT ── */
   function init() {
     injectStyles();
     let mount = document.getElementById("cod-form-mount") || document.querySelector("[data-cod-form]");
@@ -932,7 +820,6 @@
     updateQtyBtns();
     startTimer();
     animateCounters();
-    setTimeout(() => document.getElementById("cod-name")?.focus(), 400);
     loadCommunes();
     fetchStock();
     bindEvents();
