@@ -1,5 +1,5 @@
 /**
- * COD Lead Form System — Algeria
+ * COD Lead Form System — Algeri
  * Premium Redesign v3 (High-Converting, Clean UI)
  */
 (function () {
