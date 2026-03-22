@@ -1,6 +1,6 @@
 /**
  * COD Lead Form System — Algeria
- * Premium Redesign v3 (High-Converting, Clean UI)
+ * Premium Redesign v4 (With Variant Sync & Order Receipt)
  */
 (function () {
   "use strict";
@@ -46,10 +46,15 @@
   };
 
   let COMMUNES_BY_WILAYA = {};
+  let SHOPIFY_VARIANTS = [];
 
   let state = {
-    qty: 1, maxQty: 99, wilaya: CONFIG.defaultWilaya, commune: "",
-    deliveryType: "home", shippingCost: SHIPPING[CONFIG.defaultWilaya]?.home ?? 400,
+    qty: 1, maxQty: 99, 
+    wilaya: CONFIG.defaultWilaya, 
+    commune: "",
+    variantTitle: "Par défaut",
+    deliveryType: "home", 
+    shippingCost: SHIPPING[CONFIG.defaultWilaya]?.home ?? 400,
     submitting: false, submitted: false,
     viewerCount: Math.floor(Math.random() * 18) + 7,
     ordersToday: Math.floor(Math.random() * 60) + 40,
@@ -63,422 +68,101 @@
       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
       #cod-form-root {
-        all: initial;
-        display: block;
-        width: 100%;
-        max-width: 520px;
-        margin: 0 auto;
-        box-sizing: border-box;
-        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        background: #ffffff;
-        border-radius: 20px;
-        border: 1px solid #E5E7EB;
-        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08);
-        overflow: hidden;
+        all: initial; display: block; width: 100%; max-width: 520px; margin: 0 auto;
+        box-sizing: border-box; font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased; background: #ffffff;
+        border-radius: 20px; border: 1px solid #E5E7EB;
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.08); overflow: hidden;
       }
-
-      #cod-form-root * {
-        box-sizing: border-box;
-      }
+      #cod-form-root * { box-sizing: border-box; }
 
       /* ── HEADER ── */
-      .cod-header {
-        padding: 28px 24px 20px;
-        text-align: center;
-        background: #ffffff;
-        border-bottom: 1px solid #F3F4F6;
-      }
-      
-      .cod-trust-badges {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      
-      .cod-trust-badge {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #059669;
-        background: #ECFDF5;
-        padding: 6px 10px;
-        border-radius: 8px;
-      }
+      .cod-header { padding: 28px 24px 20px; text-align: center; background: #ffffff; border-bottom: 1px solid #F3F4F6; }
+      .cod-trust-badges { display: flex; justify-content: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+      .cod-trust-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #059669; background: #ECFDF5; padding: 6px 10px; border-radius: 8px; }
+      .cod-title { font-size: 22px; font-weight: 800; color: #111827; margin: 0 0 6px 0; letter-spacing: -0.5px; }
+      .cod-subtitle { font-size: 14px; color: #6B7280; margin: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-      .cod-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: #111827;
-        margin: 0 0 6px 0;
-        letter-spacing: -0.5px;
-      }
-      
-      .cod-subtitle {
-        font-size: 14px;
-        color: #6B7280;
-        margin: 0;
-        font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      /* ── URGENCY STRIP (Subtle) ── */
-      .cod-urgency {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #F9FAFB;
-        padding: 12px 24px;
-        border-bottom: 1px solid #F3F4F6;
-        font-size: 12px;
-        font-weight: 600;
-        color: #4B5563;
-      }
-
-      .cod-live-group {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .cod-pulse {
-        width: 8px; height: 8px;
-        background: #EF4444;
-        border-radius: 50%;
-        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-        animation: pulseLive 2s infinite;
-      }
-
-      @keyframes pulseLive {
-        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-      }
-
-      .cod-timer {
-        color: #DC2626;
-        background: #FEF2F2;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-variant-numeric: tabular-nums;
-      }
+      /* ── URGENCY STRIP ── */
+      .cod-urgency { display: flex; justify-content: space-between; align-items: center; background: #F9FAFB; padding: 12px 24px; border-bottom: 1px solid #F3F4F6; font-size: 12px; font-weight: 600; color: #4B5563; }
+      .cod-live-group { display: flex; align-items: center; gap: 8px; }
+      .cod-pulse { width: 8px; height: 8px; background: #EF4444; border-radius: 50%; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); animation: pulseLive 2s infinite; }
+      @keyframes pulseLive { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+      .cod-timer { color: #DC2626; background: #FEF2F2; padding: 4px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; }
 
       /* ── BODY ── */
-      .cod-body {
-        padding: 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
-
-      /* ── FIELDS ── */
-      .cod-field-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .cod-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-      }
-
-      .cod-label {
-        font-size: 13px;
-        font-weight: 700;
-        color: #374151;
-      }
-
-      .cod-input, .cod-select {
-        width: 100%;
-        height: 52px;
-        padding: 0 16px;
-        background: #F9FAFB;
-        border: 1px solid #E5E7EB;
-        border-radius: 12px;
-        font-size: 15px;
-        font-family: inherit;
-        font-weight: 500;
-        color: #111827;
-        outline: none;
-        transition: all 0.2s ease;
-        appearance: none;
-        -webkit-appearance: none;
-      }
-
-      .cod-select {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-        background-repeat: no-repeat;
-        background-position: right 16px center;
-        background-size: 16px;
-        cursor: pointer;
-        padding-right: 40px;
-      }
-
-      .cod-input:hover, .cod-select:hover {
-        border-color: #D1D5DB;
-      }
-
-      .cod-input:focus, .cod-select:focus {
-        border-color: #FF5A1F;
-        background: #FFFFFF;
-        box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.1);
-      }
-
+      .cod-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+      .cod-field-group { display: flex; flex-direction: column; gap: 8px; }
+      .cod-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .cod-label { font-size: 13px; font-weight: 700; color: #374151; }
+      .cod-input, .cod-select { width: 100%; height: 52px; padding: 0 16px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; font-size: 15px; font-family: inherit; font-weight: 500; color: #111827; outline: none; transition: all 0.2s ease; appearance: none; -webkit-appearance: none; }
+      .cod-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; cursor: pointer; padding-right: 40px; }
+      .cod-input:hover, .cod-select:hover { border-color: #D1D5DB; }
+      .cod-input:focus, .cod-select:focus { border-color: #FF5A1F; background: #FFFFFF; box-shadow: 0 0 0 4px rgba(255, 90, 31, 0.1); }
       .cod-input::placeholder { color: #9CA3AF; font-weight: 400; }
-
-      .cod-input.cod-error, .cod-select.cod-error {
-        border-color: #EF4444;
-        background: #FEF2F2;
-      }
-
-      .cod-error-msg {
-        font-size: 12px;
-        color: #EF4444;
-        font-weight: 600;
-        display: none;
-        margin-top: -4px;
-      }
+      .cod-input.cod-error, .cod-select.cod-error { border-color: #EF4444; background: #FEF2F2; }
+      .cod-error-msg { font-size: 12px; color: #EF4444; font-weight: 600; display: none; margin-top: -4px; }
       .cod-error-msg.visible { display: block; }
 
       /* ── DELIVERY CARDS ── */
-      .cod-delivery-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-      }
-
+      .cod-delivery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       .cod-delivery-option { position: relative; cursor: pointer; }
       .cod-delivery-option input { position: absolute; opacity: 0; pointer-events: none; }
-      
-      .cod-delivery-card {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 6px;
-        padding: 16px;
-        border: 2px solid #E5E7EB;
-        border-radius: 16px;
-        background: #ffffff;
-        transition: all 0.2s ease;
-        height: 100%;
-      }
-
-      .cod-del-top {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #111827;
-      }
-
-      .cod-del-icon {
-        color: #6B7280;
-        display: flex;
-      }
-
-      .cod-delivery-price {
-        font-size: 13px;
-        color: #6B7280;
-        font-weight: 600;
-      }
-
-      .cod-delivery-option input:checked + .cod-delivery-card {
-        border-color: #FF5A1F;
-        background: #FFF9F7;
-      }
-      
-      .cod-delivery-option input:checked + .cod-delivery-card .cod-del-icon {
-        color: #FF5A1F;
-      }
-      
-      .cod-delivery-option input:checked + .cod-delivery-card .cod-delivery-price {
-        color: #FF5A1F;
-      }
+      .cod-delivery-card { display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 16px; border: 2px solid #E5E7EB; border-radius: 16px; background: #ffffff; transition: all 0.2s ease; height: 100%; }
+      .cod-del-top { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #111827; }
+      .cod-del-icon { color: #6B7280; display: flex; }
+      .cod-delivery-price { font-size: 13px; color: #6B7280; font-weight: 600; }
+      .cod-delivery-option input:checked + .cod-delivery-card { border-color: #FF5A1F; background: #FFF9F7; }
+      .cod-delivery-option input:checked + .cod-delivery-card .cod-del-icon { color: #FF5A1F; }
+      .cod-delivery-option input:checked + .cod-delivery-card .cod-delivery-price { color: #FF5A1F; }
 
       /* ── QUANTITY AND SUMMARY ── */
-      .cod-summary-section {
-        background: #F9FAFB;
-        border-radius: 16px;
-        padding: 20px;
-        border: 1px solid #E5E7EB;
-      }
-
-      .cod-qty-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 20px;
-        border-bottom: 1px dashed #D1D5DB;
-      }
-
-      .cod-qty-label {
-        font-weight: 700;
-        color: #374151;
-        font-size: 14px;
-      }
-
-      .cod-qty-wrapper {
-        display: flex;
-        align-items: center;
-        background: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 10px;
-        overflow: hidden;
-        height: 40px;
-      }
-
-      .cod-qty-btn {
-        width: 40px; height: 100%;
-        background: none; border: none;
-        cursor: pointer;
-        font-size: 18px;
-        color: #4B5563;
-        display: flex; align-items: center; justify-content: center;
-        transition: 0.2s;
-      }
-      
+      .cod-summary-section { background: #F9FAFB; border-radius: 16px; padding: 20px; border: 1px solid #E5E7EB; }
+      .cod-qty-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed #D1D5DB; }
+      .cod-qty-label { font-weight: 700; color: #374151; font-size: 14px; }
+      .cod-qty-wrapper { display: flex; align-items: center; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 10px; overflow: hidden; height: 40px; }
+      .cod-qty-btn { width: 40px; height: 100%; background: none; border: none; cursor: pointer; font-size: 18px; color: #4B5563; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
       .cod-qty-btn:hover:not(:disabled) { background: #F3F4F6; color: #111827; }
       .cod-qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-      
-      .cod-qty-input {
-        width: 40px; text-align: center;
-        border: none; background: none;
-        font-size: 15px; font-weight: 700; color: #111827;
-        font-family: inherit; pointer-events: none;
-      }
-
-      .cod-price-line {
-        display: flex;
-        justify-content: space-between;
-        font-size: 14px;
-        color: #4B5563;
-        margin-bottom: 12px;
-      }
-      
+      .cod-qty-input { width: 40px; text-align: center; border: none; background: none; font-size: 15px; font-weight: 700; color: #111827; font-family: inherit; pointer-events: none; }
+      .cod-price-line { display: flex; justify-content: space-between; font-size: 14px; color: #4B5563; margin-bottom: 12px; }
       .cod-price-line:last-child { margin-bottom: 0; }
-      
       .cod-price-val { font-weight: 600; color: #111827; }
-      
-      .cod-price-line.total {
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid #E5E7EB;
-        font-size: 18px;
-      }
+      .cod-price-line.total { margin-top: 16px; padding-top: 16px; border-top: 1px solid #E5E7EB; font-size: 18px; }
       .cod-price-line.total .cod-price-key { color: #111827; font-weight: 800; }
       .cod-price-line.total .cod-price-val { color: #FF5A1F; font-weight: 800; }
 
       /* ── SUBMIT BUTTON ── */
-      .cod-submit-btn {
-        width: 100%; height: 60px;
-        background: #FF5A1F;
-        color: #fff;
-        border: none;
-        border-radius: 14px;
-        font-family: inherit;
-        font-size: 17px;
-        font-weight: 800;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: all 0.2s ease;
-        box-shadow: 0 8px 20px -6px rgba(255, 90, 31, 0.4);
-      }
-      
-      .cod-submit-btn:hover:not(:disabled) {
-        transform: translateY(-2px);
-        background: #F0490E;
-        box-shadow: 0 12px 24px -6px rgba(255, 90, 31, 0.5);
-      }
-      
+      .cod-submit-btn { width: 100%; height: 60px; background: #FF5A1F; color: #fff; border: none; border-radius: 14px; font-family: inherit; font-size: 17px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s ease; box-shadow: 0 8px 20px -6px rgba(255, 90, 31, 0.4); }
+      .cod-submit-btn:hover:not(:disabled) { transform: translateY(-2px); background: #F0490E; box-shadow: 0 12px 24px -6px rgba(255, 90, 31, 0.5); }
       .cod-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
-      
       .cod-submit-btn.loading .cod-btn-text { display: none; }
       .cod-submit-btn.loading .cod-spinner { display: block; }
-      
-      .cod-spinner {
-        display: none;
-        width: 24px; height: 24px;
-        border: 3px solid rgba(255,255,255,0.3);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: codSpin 0.8s linear infinite;
-      }
-      
-      @keyframes codSpin { to { transform: rotate(360deg); } }
+      .cod-spinner { display: none; width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: codSpin 0.8s linear infinite; }
 
       /* ── FOOTER ── */
-      .cod-footer {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        margin-top: -4px;
-        padding-bottom: 24px;
-        font-size: 12px;
-        color: #6B7280;
-        font-weight: 500;
-      }
-      .cod-footer svg { color: #059669; }
+      .cod-footer { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: -4px; padding-bottom: 24px; font-size: 12px; color: #6B7280; font-weight: 500; text-align: center; }
+      .cod-footer svg { color: #059669; flex-shrink: 0; }
 
-      /* ── SUCCESS SCREEN ── */
-      .cod-success {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        padding: 40px 24px;
-        background: #fff;
-      }
-      
+      /* ── SUCCESS SCREEN WITH RECEIPT ── */
+      .cod-success { display: none; flex-direction: column; align-items: center; text-align: center; padding: 40px 24px; background: #fff; }
       .cod-success.visible { display: flex; animation: slideIn 0.4s ease forwards; }
+      @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .cod-success-icon { width: 72px; height: 72px; background: #D1FAE5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+      .cod-success-title { font-size: 24px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+      .cod-success-desc { font-size: 15px; color: #6B7280; line-height: 1.5; margin-bottom: 24px; }
       
-      @keyframes slideIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .cod-success-icon {
-        width: 72px; height: 72px;
-        background: #D1FAE5;
-        color: #059669;
-        border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        margin-bottom: 20px;
-      }
-
-      .cod-success-title {
-        font-size: 24px; font-weight: 800; color: #111827; margin-bottom: 8px;
-      }
-      
-      .cod-success-desc {
-        font-size: 15px; color: #6B7280; line-height: 1.5; margin-bottom: 24px;
-      }
-
-      .cod-order-box {
-        background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 16px;
-        padding: 20px; width: 100%; max-width: 300px;
-      }
-      
-      .cod-order-label { font-size: 12px; color: #6B7280; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
-      .cod-order-val { font-size: 20px; font-weight: 800; color: #111827; }
+      .cod-receipt-card { background: #F9FAFB; border: 1px dashed #D1D5DB; border-radius: 16px; padding: 20px; width: 100%; max-width: 360px; text-align: left; }
+      .cod-receipt-title { font-size: 13px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; border-bottom: 1px solid #E5E7EB; padding-bottom: 10px; text-align: center; }
+      .cod-receipt-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
+      .cod-receipt-label { color: #6B7280; }
+      .cod-receipt-val { color: #111827; font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
+      .cod-receipt-total { display: flex; justify-content: space-between; border-top: 1px solid #E5E7EB; margin-top: 12px; padding-top: 12px; font-size: 16px; font-weight: 800; color: #111827; }
+      .cod-receipt-total .cod-receipt-val { color: #FF5A1F; }
 
       /* ── RESPONSIVE ── */
       @media (max-width: 480px) {
-        #cod-form-root { border-radius: 16px; border-left: none; border-right: none; }
+        #cod-form-root { border-radius: 16px; border-left: none; border-right: none; border-top: 1px solid #E5E7EB; }
         .cod-row { grid-template-columns: 1fr; gap: 12px; }
         .cod-delivery-grid { grid-template-columns: 1fr; }
         .cod-header { padding: 24px 20px 16px; }
@@ -488,7 +172,7 @@
     document.head.appendChild(style);
   }
 
-  /* ── PREMIUM HTML STRUCTURE ── */
+  /* ── HTML STRUCTURE ── */
   function buildHTML() {
     return `
       <div class="cod-header">
@@ -509,13 +193,19 @@
       <div class="cod-urgency">
         <div class="cod-live-group">
           <div class="cod-pulse"></div>
-          <span><span id="cod-viewers" style="color:#111827;font-weight:800;">${state.viewerCount}</span> clients consultent ce produit</span>
+          <span><span id="cod-viewers" style="color:#111827;font-weight:800;">${state.viewerCount}</span> clients consultent ceci</span>
         </div>
         <div class="cod-timer" id="cod-timer">15:00</div>
       </div>
 
       <div class="cod-body" id="cod-body">
         
+        <!-- VARIANT SELECTOR (Hidden by default until loaded) -->
+        <div class="cod-field-group" id="cod-variant-group" style="display: none;">
+          <label class="cod-label">Option / Variante *</label>
+          <select id="cod-variant-select" class="cod-select"></select>
+        </div>
+
         <div class="cod-field-group">
           <label class="cod-label">Nom et Prénom *</label>
           <input id="cod-name" class="cod-input" type="text" placeholder="Ex: Ahmed Benali" autocomplete="name" />
@@ -603,7 +293,7 @@
 
       <div class="cod-footer">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        Vos données sont sécurisées. Paiement à la réception.
+        <span>Vos données sont sécurisées. Paiement à la réception.</span>
       </div>
 
       <div class="cod-success" id="cod-success">
@@ -613,15 +303,115 @@
         <div class="cod-success-title">Commande Réussie !</div>
         <div class="cod-success-desc">Merci pour votre confiance. Notre équipe vous appellera dans moins de 24h pour confirmer l'expédition.</div>
         
-        <div class="cod-order-box">
-          <div class="cod-order-label">Numéro de Commande</div>
-          <div class="cod-order-val" id="cod-order-id">#COD-000000</div>
+        <div class="cod-receipt-card">
+          <div class="cod-receipt-title">Reçu de commande</div>
+          <div class="cod-receipt-row">
+            <span class="cod-receipt-label">Numéro</span>
+            <span class="cod-receipt-val" id="succ-order-id">#COD-000000</span>
+          </div>
+          <div class="cod-receipt-row">
+            <span class="cod-receipt-label">Variante</span>
+            <span class="cod-receipt-val" id="succ-variant">—</span>
+          </div>
+          <div class="cod-receipt-row">
+            <span class="cod-receipt-label">Quantité</span>
+            <span class="cod-receipt-val" id="succ-qty">1</span>
+          </div>
+          <div class="cod-receipt-row">
+            <span class="cod-receipt-label">Livraison</span>
+            <span class="cod-receipt-val" id="succ-del-type">Domicile</span>
+          </div>
+          <div class="cod-receipt-row">
+            <span class="cod-receipt-label">Destination</span>
+            <span class="cod-receipt-val" id="succ-location">—</span>
+          </div>
+          <div class="cod-receipt-total">
+            <span class="cod-receipt-label">Total</span>
+            <span class="cod-receipt-val" id="succ-total">—</span>
+          </div>
         </div>
       </div>
     `;
   }
 
-  /* ── JS LOGIC (Unchanged from original) ── */
+  /* ── SHOPIFY VARIANTS INTEGRATION ── */
+  async function fetchShopifyVariants() {
+    const pathname = window.location.pathname;
+    const match = pathname.match(/\/products\/([^/?#]+)/);
+    if (!match) return;
+    
+    const handle = match[1];
+    try {
+      const res = await fetch(`/products/${handle}.js`);
+      const productData = await res.json();
+      
+      if (productData && productData.variants && productData.variants.length > 0) {
+        SHOPIFY_VARIANTS = productData.variants;
+        
+        // If multiple variants or not just the default title
+        if (SHOPIFY_VARIANTS.length > 1 || SHOPIFY_VARIANTS[0].title !== "Default Title") {
+          const select = document.getElementById("cod-variant-select");
+          const group = document.getElementById("cod-variant-group");
+          
+          let optionsHtml = "";
+          SHOPIFY_VARIANTS.forEach(v => {
+            const isAvailable = v.available ? "" : " (Rupture de stock)";
+            optionsHtml += `<option value="${v.id}" ${!v.available ? "disabled" : ""}>${v.title} - ${(v.price / 100).toLocaleString("fr-DZ")} ${CONFIG.currency}${isAvailable}</option>`;
+          });
+          
+          select.innerHTML = optionsHtml;
+          group.style.display = "flex";
+
+          // Set default selected variant based on URL or CONFIG
+          const urlParams = new URLSearchParams(window.location.search);
+          const currentVariantId = urlParams.get('variant') || CONFIG.variantId || SHOPIFY_VARIANTS[0].id;
+          select.value = currentVariantId;
+          updateFormVariant(currentVariantId);
+
+          // Listen for form dropdown changes
+          select.addEventListener("change", (e) => {
+            updateFormVariant(e.target.value);
+            // Update the main store URL so main images change
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('variant', e.target.value);
+            window.history.replaceState({}, '', newUrl);
+          });
+
+          // Polling to sync if user clicks the native store variant buttons
+          let lastUrlVariant = new URLSearchParams(window.location.search).get('variant');
+          setInterval(() => {
+            const currentVariant = new URLSearchParams(window.location.search).get('variant');
+            if (currentVariant && currentVariant !== lastUrlVariant) {
+              lastUrlVariant = currentVariant;
+              if (select.value !== currentVariant) {
+                select.value = currentVariant;
+                updateFormVariant(currentVariant);
+              }
+            }
+          }, 400);
+        } else {
+          // Single default variant
+          updateFormVariant(SHOPIFY_VARIANTS[0].id);
+        }
+      }
+    } catch (e) {
+      console.log("COD Form: Could not fetch Shopify variants", e);
+    }
+  }
+
+  function updateFormVariant(variantIdStr) {
+    const vId = parseInt(variantIdStr);
+    const variant = SHOPIFY_VARIANTS.find(v => v.id === vId);
+    if (variant) {
+      CONFIG.variantId = variant.id;
+      CONFIG.price = variant.price / 100;
+      state.variantTitle = variant.title;
+      calcAndRender();
+      fetchStock();
+    }
+  }
+
+  /* ── JS LOGIC ── */
   async function loadCommunes() {
     try {
       const resp = await fetch(`${CONFIG.apiBase}/api/communes`);
@@ -662,6 +452,7 @@
       const { inventory } = await resp.json();
       if (typeof inventory === "number" && inventory > 0) {
         state.maxQty = inventory;
+        updateQtyBtns();
       }
     } catch (_) {}
   }
@@ -709,18 +500,26 @@
     state.submitting = true;
     const btn = document.getElementById("cod-submit");
     if (btn) { btn.classList.add("loading"); btn.disabled = true; }
+    
     const phone = document.getElementById("cod-phone")?.value.replace(/\s/g,"");
     const address = document.getElementById("cod-address")?.value.trim();
+    const communeVal = document.getElementById("cod-commune")?.value;
+    
     const payload = {
-      variant_id: CONFIG.variantId, quantity: state.qty,
+      variant_id: CONFIG.variantId, 
+      quantity: state.qty,
       customer_name: document.getElementById("cod-name")?.value.trim(),
-      phone, wilaya: state.wilaya,
-      commune: document.getElementById("cod-commune")?.value,
-      address: address || `${document.getElementById("cod-commune")?.value}, ${state.wilaya}`,
-      delivery_type: state.deliveryType, shipping_cost: state.shippingCost,
-      product_price: CONFIG.price, total: CONFIG.price * state.qty + state.shippingCost,
+      phone, 
+      wilaya: state.wilaya,
+      commune: communeVal,
+      address: address || `${communeVal}, ${state.wilaya}`,
+      delivery_type: state.deliveryType, 
+      shipping_cost: state.shippingCost,
+      product_price: CONFIG.price, 
+      total: (CONFIG.price * state.qty) + state.shippingCost,
       currency: CONFIG.currency,
     };
+    
     try {
       const resp = await fetch(`${CONFIG.apiBase}/api/create-order`, {
         method: "POST",
@@ -729,8 +528,9 @@
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || "Order failed");
+      
       state.submitted = true;
-      showSuccess(data.order_id || data.order?.name || "#COD-" + Date.now().toString().slice(-6));
+      showSuccess(data.order_id || data.order?.name || "#COD-" + Date.now().toString().slice(-6), payload);
     } catch (err) {
       if (btn) {
         btn.classList.remove("loading"); btn.disabled = false;
@@ -741,15 +541,23 @@
     }
   }
 
-  function showSuccess(orderId) {
+  function showSuccess(orderId, payload) {
     const body = document.getElementById("cod-body");
     const footer = document.querySelector(".cod-footer");
     const success = document.getElementById("cod-success");
-    const orderIdEl = document.getElementById("cod-order-id");
+    
     if (body) body.style.display = "none";
     if (footer) footer.style.display = "none";
+    
+    // Fill Receipt details
+    setEl("succ-order-id", orderId);
+    setEl("succ-variant", state.variantTitle !== "Default Title" ? state.variantTitle : "Standard");
+    setEl("succ-qty", state.qty + "x");
+    setEl("succ-del-type", state.deliveryType === "home" ? "Domicile" : "StopDesk");
+    setEl("succ-location", `${payload.commune}, ${payload.wilaya}`);
+    setEl("succ-total", payload.total.toLocaleString("fr-DZ") + " " + CONFIG.currency);
+    
     if (success) success.classList.add("visible");
-    if (orderIdEl) orderIdEl.textContent = orderId;
     clearInterval(timerInterval);
   }
 
@@ -783,14 +591,18 @@
     const wilaySel = document.getElementById("cod-wilaya");
     if (wilaySel) wilaySel.addEventListener("change", (e) => { state.wilaya=e.target.value; populateCommunes(state.wilaya); calcAndRender(); });
     document.querySelectorAll("input[name='cod-delivery']").forEach((r) => r.addEventListener("change",(e)=>{ state.deliveryType=e.target.value; calcAndRender(); }));
+    
     const minus = document.getElementById("cod-qty-minus");
     const plus = document.getElementById("cod-qty-plus");
     if (minus) minus.addEventListener("click",()=>{ if(state.qty>1){state.qty--;document.getElementById("cod-qty").value=state.qty;calcAndRender();updateQtyBtns();}});
     if (plus) plus.addEventListener("click",()=>{ if(state.qty<state.maxQty){state.qty++;document.getElementById("cod-qty").value=state.qty;calcAndRender();updateQtyBtns();}});
+    
     const phoneInput = document.getElementById("cod-phone");
     if (phoneInput) phoneInput.addEventListener("input",()=>formatPhone(phoneInput));
+    
     const btn = document.getElementById("cod-submit");
     if (btn) btn.addEventListener("click", handleSubmit);
+    
     ["cod-name","cod-phone","cod-wilaya","cod-commune"].forEach((id)=>{
       const el=document.getElementById(id);
       if(el) el.addEventListener("input",()=>{ el.classList.remove("cod-error"); const e=document.getElementById(id+"-err"); if(e) e.classList.remove("visible"); });
@@ -816,12 +628,18 @@
     root.id = "cod-form-root";
     root.innerHTML = buildHTML();
     mount.appendChild(root);
+    
     calcAndRender();
     updateQtyBtns();
     startTimer();
     animateCounters();
     loadCommunes();
-    fetchStock();
+    
+    // Fetch variants before binding to ensure dynamic pricing/options are set immediately
+    fetchShopifyVariants().then(() => {
+      fetchStock();
+    });
+    
     bindEvents();
   }
 
