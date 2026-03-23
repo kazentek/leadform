@@ -69,7 +69,7 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
       event_source_url: `https://${process.env.SHOP_DOMAIN}/products`,
       user_data: {
         ph: [hashedPhone],
-        country: ["dz"],
+        country: [crypto.createHash("sha256").update("dz").digest("hex")],
         ct: [hashedCity],
         st: [hashedState],
       },
