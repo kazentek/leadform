@@ -1,6 +1,7 @@
 /**
  * COD Lead Form System — Algeria
  * Premium Redesign v4 (With Variant Sync, Order Receipt & Conversion Events)
+ * Clean version: Removed fake urgency elements (timer & viewer count)
  */
 (function () {
   "use strict";
@@ -25,7 +26,7 @@
     Object.assign(CONFIG, window.__COD_CONFIG__);
   }
 
-const SHIPPING = {
+  const SHIPPING = {
     Adrar: { stopdesk: 700, home: 1450 },
     Chlef: { stopdesk: 400, home: 750 },
     Laghouat: { stopdesk: 550, home: 950 },
@@ -81,7 +82,8 @@ const SHIPPING = {
     "Béni Abbès": { stopdesk: 750, home: 1150 },
     Timimoun: { stopdesk: 700, home: 1450 },
     "In Salah": { stopdesk: 900, home: 1650 },
-};
+  };
+  
   let COMMUNES_BY_WILAYA = {};
   let SHOPIFY_VARIANTS = [];
 
@@ -93,9 +95,6 @@ const SHIPPING = {
     deliveryType: "home",
     shippingCost: SHIPPING[CONFIG.defaultWilaya]?.home ?? 400,
     submitting: false, submitted: false,
-    viewerCount: Math.floor(Math.random() * 18) + 7,
-    ordersToday: Math.floor(Math.random() * 60) + 40,
-    timerSecs: 900,
   };
 
   /* ── CSS ── */
@@ -117,11 +116,6 @@ const SHIPPING = {
       .cod-trust-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #059669; background: #ECFDF5; padding: 6px 10px; border-radius: 8px; }
       .cod-title { font-size: 22px; font-weight: 800; color: #111827; margin: 0 0 6px 0; letter-spacing: -0.5px; }
       .cod-subtitle { font-size: 14px; color: #6B7280; margin: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .cod-urgency { display: flex; justify-content: space-between; align-items: center; background: #F9FAFB; padding: 12px 24px; border-bottom: 1px solid #F3F4F6; font-size: 12px; font-weight: 600; color: #4B5563; }
-      .cod-live-group { display: flex; align-items: center; gap: 8px; }
-      .cod-pulse { width: 8px; height: 8px; background: #EF4444; border-radius: 50%; box-shadow: 0 0 0 0 rgba(239,68,68,0.4); animation: pulseLive 2s infinite; }
-      @keyframes pulseLive { 0% { transform:scale(0.95); box-shadow:0 0 0 0 rgba(239,68,68,0.7); } 70% { transform:scale(1); box-shadow:0 0 0 6px rgba(239,68,68,0); } 100% { transform:scale(0.95); box-shadow:0 0 0 0 rgba(239,68,68,0); } }
-      .cod-timer { color: #DC2626; background: #FEF2F2; padding: 4px 8px; border-radius: 6px; font-variant-numeric: tabular-nums; }
       .cod-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
       .cod-field-group { display: flex; flex-direction: column; gap: 8px; }
       .cod-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -207,14 +201,6 @@ const SHIPPING = {
         </div>
         <h2 class="cod-title">Finaliser ma commande</h2>
         <p class="cod-subtitle">${CONFIG.productTitle}</p>
-      </div>
-
-      <div class="cod-urgency">
-        <div class="cod-live-group">
-          <div class="cod-pulse"></div>
-          <span><span id="cod-viewers" style="color:#111827;font-weight:800;">${state.viewerCount}</span> clients consultent ceci</span>
-        </div>
-        <div class="cod-timer" id="cod-timer">15:00</div>
       </div>
 
       <div class="cod-body" id="cod-body">
@@ -697,7 +683,6 @@ const SHIPPING = {
     setEl("succ-total", payload.total.toLocaleString("fr-DZ") + " " + CONFIG.currency);
 
     if(success) success.classList.add("visible");
-    clearInterval(timerInterval);
 
     // Fire all conversion pixels
     fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id);
@@ -707,22 +692,6 @@ const SHIPPING = {
     let v=input.value.replace(/\D/g,"").slice(0,10), f="";
     for(let i=0;i<v.length;i++){ if(i===2||i===4||i===6||i===8) f+=" "; f+=v[i]; }
     input.value=f;
-  }
-
-  let timerInterval;
-  function startTimer() {
-    timerInterval = setInterval(()=>{
-      state.timerSecs--;
-      if(state.timerSecs<=0) state.timerSecs=900;
-      const m=String(Math.floor(state.timerSecs/60)).padStart(2,"0");
-      const s=String(state.timerSecs%60).padStart(2,"0");
-      const el=document.getElementById("cod-timer");
-      if(el) el.textContent=`${m}:${s}`;
-    },1000);
-  }
-
-  function animateCounters() {
-    setInterval(()=>{ state.viewerCount=Math.max(3,Math.min(35,state.viewerCount+(Math.random()<0.5?-1:1))); setEl("cod-viewers",state.viewerCount); },4500);
   }
 
   function bindEvents() {
@@ -761,7 +730,7 @@ const SHIPPING = {
     root.innerHTML=buildHTML();
     mount.appendChild(root);
     initFacebookPixel();
-    calcAndRender(); updateQtyBtns(); startTimer(); animateCounters();
+    calcAndRender(); updateQtyBtns();
     loadCommunes();
     fetchShopifyVariants().then(()=>{ fetchStock(); });
     bindEvents();
