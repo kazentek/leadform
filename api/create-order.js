@@ -4,6 +4,8 @@
  * CommonJS — Vercel Node.js runtime
  */
 
+const crypto = require("crypto");
+
 let cachedToken = null;
 let tokenExpiresAt = 0;
 
@@ -41,78 +43,98 @@ function setCORS(res) {
    Deduped with browser pixel via event_id
 ───────────────────────────────────────────── */
 async function fireFacebookCAPI(payload, orderId, eventId) {
-  const PIXEL_ID    = process.env.FB_PIXEL_ID;
-  const CAPI_TOKEN  = process.env.FB_CAPI_TOKEN;
+  const PIXEL_ID   = process.env.FB_PIXEL_ID;
+  const CAPI_TOKEN = process.env.FB_CAPI_TOKEN;
 
   if (!PIXEL_ID || !CAPI_TOKEN) {
     console.log("[CAPI] Skipped — FB_PIXEL_ID or FB_CAPI_TOKEN not set");
     return;
   }
 
-  // DZD → USD for Facebook value reporting
   const valueUSD = parseFloat((payload.total / 136).toFixed(2));
 
-  // Hash phone for user matching (Facebook requires SHA-256)
-  const crypto = require("crypto");
-  const hashedPhone = crypto
-    .createHash("sha256")
-    .update(payload.phone.replace(/\s/g, ""))
-    .digest("hex");
+  const hashedPhone = crypto.createHash("sha256")
+    .update(payload.phone.replace(/\s/g, "")).digest("hex");
+  const hashedCity = crypto.createHash("sha256")
+    .update((payload.commune || "").toLowerCase().replace(/\s/g, "")).digest("hex");
+  const hashedState = crypto.createHash("sha256")
+    .update((payload.wilaya || "").toLowerCase().replace(/\s/g, "")).digest("hex");
 
   const eventData = {
-    data: [
-      {
-        event_name: "Purchase",
-        event_time: Math.floor(Date.now() / 1000),
-        event_id: eventId, // Same ID as browser pixel → Facebook deduplicates
-        action_source: "website",
-        event_source_url: `https://${process.env.SHOP_DOMAIN}/products`,
-        user_data: {
-          ph: [hashedPhone], // Hashed phone for user matching
-          country: ["dz"],   // Algeria
-          ct: [             // City (hashed)
-            crypto.createHash("sha256")
-              .update(payload.commune.toLowerCase().replace(/\s/g, ""))
-              .digest("hex")
-          ],
-          st: [             // State/Province (hashed)
-            crypto.createHash("sha256")
-              .update(payload.wilaya.toLowerCase().replace(/\s/g, ""))
-              .digest("hex")
-          ],
-        },
-        custom_data: {
-          value: valueUSD,
-          currency: "USD",
-          order_id: orderId,
-          content_ids: [String(payload.variant_id)],
-          content_type: "product",
-          num_items: payload.quantity,
-          delivery_category: "home_delivery",
-        },
+    data: [{
+      event_name: "Purchase",
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: eventId,
+      action_source: "website",
+      event_source_url: `https://${process.env.SHOP_DOMAIN}/products`,
+      user_data: {
+        ph: [hashedPhone],
+        country: ["dz"],
+        ct: [hashedCity],
+        st: [hashedState],
       },
-    ],
-    test_event_code: "TEST67029", // Uncomment to test in Events Manager
+      custom_data: {
+        value: valueUSD,
+        currency: "USD",
+        order_id: orderId,
+        content_ids: [String(payload.variant_id)],
+        content_type: "product",
+        num_items: Number(payload.quantity),
+        delivery_category: "home_delivery",
+      },
+    }],
+    ...(process.env.FB_TEST_EVENT_CODE ? { test_event_code: process.env.FB_TEST_EVENT_CODE } : {}),
   };
 
-  try {
-    const resp = await fetch(
-      `https://graph.facebook.com/v19.0/${PIXEL_ID}/events?access_token=${CAPI_TOKEN}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(eventData),
-      }
-    );
-    const result = await resp.json();
-    if (resp.ok) {
-      console.log(`[CAPI] ✅ Purchase event sent — events_received: ${result.events_received}`);
-    } else {
-      console.error("[CAPI] ❌ Error:", JSON.stringify(result));
-    }
-  } catch (err) {
-    console.error("[CAPI] ❌ Network error:", err.message);
-  }
+  // Use Node.js https module instead of fetch — more reliable on Vercel
+  return new Promise((resolve) => {
+    const https = require("https");
+    const body = JSON.stringify(eventData);
+    const path = `/v19.0/${PIXEL_ID}/events?access_token=${CAPI_TOKEN}`;
+
+    const options = {
+      hostname: "graph.facebook.com",
+      port: 443,
+      path: path,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(body),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => {
+        try {
+          const result = JSON.parse(data);
+          if (res.statusCode === 200) {
+            console.log(`[CAPI] ✅ Purchase sent — events_received: ${result.events_received}`);
+          } else {
+            console.error("[CAPI] ❌ Facebook error:", JSON.stringify(result));
+          }
+        } catch(e) {
+          console.error("[CAPI] ❌ Parse error:", e.message);
+        }
+        resolve();
+      });
+    });
+
+    req.on("error", (err) => {
+      console.error("[CAPI] ❌ Request error:", err.message);
+      resolve();
+    });
+
+    req.setTimeout(8000, () => {
+      console.error("[CAPI] ❌ Timeout after 8s");
+      req.destroy();
+      resolve();
+    });
+
+    req.write(body);
+    req.end();
+  });
 }
 
 /* ─────────────────────────────────────────────
