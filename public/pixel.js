@@ -4,7 +4,7 @@
  * Redeploy after changing
  */
 (function() {
-  window.__FB_PIXEL_ID__ = "YOUR_PIXEL_ID_HERE";
+  window.__FB_PIXEL_ID__ = "1141342971356278";
 
   !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
     n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
