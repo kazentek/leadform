@@ -17,7 +17,7 @@
     price: parseFloat(currentScript.dataset.price) || (typeof productPrice !== "undefined" ? productPrice : 2500),
     productTitle: currentScript.dataset.productTitle || "Votre Produit",
     currency: currentScript.dataset.currency || "DZD",
-    apiBase: BASE_URL || "https://your-app.vercel.app",
+    apiBase: BASE_URL || "https://leadform-ebth.vercel.app",
     defaultWilaya: "Alger",
   };
 
@@ -383,16 +383,12 @@ const SHIPPING = {
 
   /* ─────────────────────────────────────────────
      CONVERSION EVENTS
-     Browser pixel fires here.
-     Server-side CAPI fires in create-order.js.
-     Same event_id → Facebook deduplicates both.
   ───────────────────────────────────────────── */
   function fireConversionEvents(orderId, total, variantId, eventId) {
-    const valueUSD  = parseFloat((total / 136).toFixed(2));
+    const valueUSD  = parseFloat((total / 260).toFixed(2));
     const valueDZD  = parseFloat(total);
     const contentId = String(variantId || CONFIG.variantId || "");
 
-    // ── 1. Facebook / Meta Pixel (browser) ──
     try {
       if (typeof fbq === "function") {
         fbq("track", "Purchase", {
@@ -408,7 +404,6 @@ const SHIPPING = {
       }
     } catch(e) { console.warn("[COD Pixel] Facebook error:", e.message); }
 
-    // ── 2. Google Analytics 4 ──
     try {
       if (typeof gtag === "function") {
         gtag("event", "purchase", {
@@ -418,7 +413,7 @@ const SHIPPING = {
           items: [{
             item_id: contentId,
             item_name: CONFIG.productTitle,
-            price: parseFloat((CONFIG.price / 136).toFixed(2)),
+            price: parseFloat((CONFIG.price / 260).toFixed(2)),
             quantity: state.qty,
           }],
         });
@@ -426,7 +421,6 @@ const SHIPPING = {
       }
     } catch(e) { console.warn("[COD Pixel] GA4 error:", e.message); }
 
-    // ── 3. TikTok Pixel ──
     try {
       if (typeof ttq !== "undefined" && typeof ttq.track === "function") {
         ttq.track("PlaceAnOrder", {
@@ -442,7 +436,6 @@ const SHIPPING = {
       }
     } catch(e) { console.warn("[COD Pixel] TikTok error:", e.message); }
 
-    // ── 4. Snapchat Pixel ──
     try {
       if (typeof snaptr === "function") {
         snaptr("track", "PURCHASE", {
@@ -456,7 +449,6 @@ const SHIPPING = {
       }
     } catch(e) { console.warn("[COD Pixel] Snapchat error:", e.message); }
 
-    // ── 5. Shopify Web Pixels / Analytics ──
     try {
       if (window.Shopify && window.Shopify.analytics && typeof window.Shopify.analytics.publish === "function") {
         window.Shopify.analytics.publish("checkout_completed", {
@@ -468,7 +460,6 @@ const SHIPPING = {
       }
     } catch(e) { console.warn("[COD Pixel] Shopify analytics error:", e.message); }
 
-    // ── 6. dataLayer (Google Tag Manager) ──
     try {
       if (Array.isArray(window.dataLayer)) {
         window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce data
@@ -481,7 +472,7 @@ const SHIPPING = {
             items: [{
               item_id: contentId,
               item_name: CONFIG.productTitle,
-              price: parseFloat((CONFIG.price / 136).toFixed(2)),
+              price: parseFloat((CONFIG.price / 260).toFixed(2)),
               quantity: state.qty,
             }],
           },
@@ -500,23 +491,37 @@ const SHIPPING = {
       const productData = await res.json();
       if (!productData?.variants?.length) return;
       SHOPIFY_VARIANTS = productData.variants;
+
       if (SHOPIFY_VARIANTS.length > 1 || SHOPIFY_VARIANTS[0].title !== "Default Title") {
         const select = document.getElementById("cod-variant-select");
         const group = document.getElementById("cod-variant-group");
+        
         select.innerHTML = SHOPIFY_VARIANTS.map(v =>
           `<option value="${v.id}" ${!v.available ? "disabled" : ""}>${v.title} — ${(v.price/100).toLocaleString("fr-DZ")} ${CONFIG.currency}${!v.available ? " (Rupture)" : ""}</option>`
         ).join("");
+        
         group.style.display = "flex";
+        
         const urlParams = new URLSearchParams(window.location.search);
-        const currentId = urlParams.get("variant") || CONFIG.variantId || SHOPIFY_VARIANTS[0].id;
+        let currentId = urlParams.get("variant") || CONFIG.variantId;
+        
+        // Auto-select an available variant if the URL or default one is out of stock
+        let vObj = SHOPIFY_VARIANTS.find(v => v.id == currentId);
+        if (!vObj || !vObj.available) {
+          const firstAvail = SHOPIFY_VARIANTS.find(v => v.available);
+          currentId = firstAvail ? firstAvail.id : SHOPIFY_VARIANTS[0].id;
+        }
+
         select.value = currentId;
         updateFormVariant(currentId);
+        
         select.addEventListener("change", (e) => {
           updateFormVariant(e.target.value);
           const url = new URL(window.location.href);
           url.searchParams.set("variant", e.target.value);
           window.history.replaceState({}, "", url);
         });
+        
         let lastUrl = new URLSearchParams(window.location.search).get("variant");
         setInterval(() => {
           const cur = new URLSearchParams(window.location.search).get("variant");
@@ -530,7 +535,25 @@ const SHIPPING = {
 
   function updateFormVariant(variantIdStr) {
     const v = SHOPIFY_VARIANTS.find(v => v.id === parseInt(variantIdStr));
-    if (v) { CONFIG.variantId = v.id; CONFIG.price = v.price / 100; state.variantTitle = v.title; calcAndRender(); fetchStock(); }
+    if (v) { 
+      CONFIG.variantId = v.id; 
+      CONFIG.price = v.price / 100; 
+      state.variantTitle = v.title; 
+      calcAndRender(); 
+      fetchStock(); 
+      
+      const btn = document.getElementById("cod-submit");
+      if (btn) {
+        const txt = btn.querySelector(".cod-btn-text");
+        if (!v.available) {
+          btn.disabled = true;
+          if (txt) txt.textContent = "Rupture de stock";
+        } else {
+          btn.disabled = false;
+          if (txt) txt.textContent = "Confirmer ma commande";
+        }
+      }
+    }
   }
 
   /* ── COMMUNES ── */
@@ -594,6 +617,15 @@ const SHIPPING = {
     const phone = document.getElementById("cod-phone");
     const wilaya = document.getElementById("cod-wilaya");
     const commune = document.getElementById("cod-commune");
+    
+    // Safety check against submitting out-of-stock variations manually
+    if (SHOPIFY_VARIANTS.length > 0) {
+      const v = SHOPIFY_VARIANTS.find(v => v.id === CONFIG.variantId);
+      if (v && !v.available) {
+        return false;
+      }
+    }
+
     if (!name?.value.trim()||name.value.trim().length<3) { setError("cod-name","cod-name-err",true); valid=false; } else setError("cod-name","cod-name-err",false);
     const rp = phone?.value.replace(/\s/g,"");
     if (!rp||!/^0[5-7]\d{8}$/.test(rp)) { setError("cod-phone","cod-phone-err",true); valid=false; } else setError("cod-phone","cod-phone-err",false);
