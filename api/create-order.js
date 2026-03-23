@@ -49,7 +49,7 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
     return;
   }
 
-  const valueUSD = parseFloat((payload.total / 136).toFixed(2));
+  const valueUSD = parseFloat((payload.total / 260).toFixed(2));
 
   // Shorthand hasher
   const h = (str) => crypto.createHash("sha256").update(str).digest("hex");
