@@ -1,6 +1,6 @@
 /**
  * COD Lead Form System — Algeria
- * Premium Redesign v4 (With Variant Sync, Order Receipt & Conversion Events)
+ * Premium Redesign v4 (With Variant Sync, Order Receipt, Email & Conversion Events)
  * Clean version: Removed fake urgency elements (timer & viewer count)
  */
 (function () {
@@ -120,6 +120,7 @@
       .cod-field-group { display: flex; flex-direction: column; gap: 8px; }
       .cod-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       .cod-label { font-size: 13px; font-weight: 700; color: #374151; }
+      .cod-optional { font-size: 11px; font-weight: 500; color: #9CA3AF; margin-left: 4px; }
       .cod-input, .cod-select { width: 100%; height: 52px; padding: 0 16px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; font-size: 15px; font-family: inherit; font-weight: 500; color: #111827; outline: none; transition: all 0.2s ease; appearance: none; -webkit-appearance: none; }
       .cod-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; cursor: pointer; padding-right: 40px; }
       .cod-input:hover, .cod-select:hover { border-color: #D1D5DB; }
@@ -222,6 +223,12 @@
           <span class="cod-error-msg" id="cod-phone-err">Numéro invalide (ex: 0551 23 45 67)</span>
         </div>
 
+        <div class="cod-field-group">
+          <label class="cod-label">Email <span class="cod-optional">(Facultatif)</span></label>
+          <input id="cod-email" class="cod-input" type="email" placeholder="exemple@email.com" autocomplete="email" dir="ltr" />
+          <span class="cod-error-msg" id="cod-email-err">Veuillez entrer une adresse email valide</span>
+        </div>
+
         <div class="cod-row">
           <div class="cod-field-group">
             <label class="cod-label">Wilaya *</label>
@@ -262,7 +269,7 @@
         </div>
 
         <div class="cod-field-group">
-          <label class="cod-label">Adresse détaillée (Facultatif)</label>
+          <label class="cod-label">Adresse détaillée <span class="cod-optional">(Facultatif)</span></label>
           <input id="cod-address" class="cod-input" type="text" placeholder="Nom de la rue, numéro de bâtiment..." />
         </div>
 
@@ -357,7 +364,6 @@
   }
 
   function getFBCookies() {
-    // Parse all cookies
     const cookies = document.cookie.split(";").reduce((acc, c) => {
       const idx = c.indexOf("=");
       if (idx > -1) acc[c.slice(0, idx).trim()] = c.slice(idx + 1).trim();
@@ -365,28 +371,16 @@
     }, {});
 
     const fbp = cookies["_fbp"] || null;
-
-    // Priority 1: fbclid directly in the current URL (most accurate — means
-    // the customer just clicked an ad and landed on this exact page)
     let fbc = null;
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const fbclid = urlParams.get("fbclid");
       if (fbclid) {
         fbc = "fb.1." + Date.now() + "." + fbclid;
-        console.log("[COD Pixel] fbclid from URL — direct ad click attribution");
       }
     } catch(e) {}
 
-    // Priority 2: existing _fbc cookie (set by Facebook pixel on previous visit)
-    // Only use if no fresh fbclid in current URL
-    if (!fbc) {
-      fbc = cookies["_fbc"] || null;
-    }
-
-    // Do NOT manually write _fbc cookie — Facebook pixel manages this
-    // Writing it ourselves can preserve stale old-campaign attribution
-
+    if (!fbc) fbc = cookies["_fbc"] || null;
     return { fbp, fbc };
   }
 
@@ -397,13 +391,18 @@
   /* ─────────────────────────────────────────────
      CONVERSION EVENTS
   ───────────────────────────────────────────── */
-  function fireConversionEvents(orderId, total, variantId, eventId) {
+  function fireConversionEvents(orderId, total, variantId, eventId, email, phone) {
     const valueUSD  = parseFloat((total / 136).toFixed(2));
     const valueDZD  = parseFloat(total);
     const contentId = String(variantId || CONFIG.variantId || "");
 
     try {
       if (typeof fbq === "function") {
+        // Send email/phone in client-side Advanced Matching if available
+        let advancedMatching = {};
+        if (email) advancedMatching.em = email.toLowerCase().trim();
+        if (phone) advancedMatching.ph = phone.replace(/\s/g, "");
+
         fbq("track", "Purchase", {
           value: valueUSD,
           currency: "USD",
@@ -445,9 +444,8 @@
           quantity: state.qty,
           order_id: orderId,
         });
-        console.log("[COD Pixel] ✅ TikTok PlaceAnOrder fired");
       }
-    } catch(e) { console.warn("[COD Pixel] TikTok error:", e.message); }
+    } catch(e) { }
 
     try {
       if (typeof snaptr === "function") {
@@ -458,9 +456,8 @@
           item_ids: [contentId],
           number_items: state.qty,
         });
-        console.log("[COD Pixel] ✅ Snapchat PURCHASE fired");
       }
-    } catch(e) { console.warn("[COD Pixel] Snapchat error:", e.message); }
+    } catch(e) { }
 
     try {
       if (window.Shopify && window.Shopify.analytics && typeof window.Shopify.analytics.publish === "function") {
@@ -469,13 +466,12 @@
           total_price: valueDZD,
           currency: "DZD",
         });
-        console.log("[COD Pixel] ✅ Shopify analytics event fired");
       }
-    } catch(e) { console.warn("[COD Pixel] Shopify analytics error:", e.message); }
+    } catch(e) { }
 
     try {
       if (Array.isArray(window.dataLayer)) {
-        window.dataLayer.push({ ecommerce: null }); // Clear previous ecommerce data
+        window.dataLayer.push({ ecommerce: null });
         window.dataLayer.push({
           event: "purchase",
           ecommerce: {
@@ -490,9 +486,8 @@
             }],
           },
         });
-        console.log("[COD Pixel] ✅ GTM dataLayer purchase pushed");
       }
-    } catch(e) { console.warn("[COD Pixel] GTM error:", e.message); }
+    } catch(e) { }
   }
 
   /* ── VARIANTS ── */
@@ -518,7 +513,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         let currentId = urlParams.get("variant") || CONFIG.variantId;
         
-        // Auto-select an available variant if the URL or default one is out of stock
         let vObj = SHOPIFY_VARIANTS.find(v => v.id == currentId);
         if (!vObj || !vObj.available) {
           const firstAvail = SHOPIFY_VARIANTS.find(v => v.available);
@@ -628,22 +622,31 @@
     let valid = true;
     const name = document.getElementById("cod-name");
     const phone = document.getElementById("cod-phone");
+    const email = document.getElementById("cod-email");
     const wilaya = document.getElementById("cod-wilaya");
     const commune = document.getElementById("cod-commune");
     
-    // Safety check against submitting out-of-stock variations manually
     if (SHOPIFY_VARIANTS.length > 0) {
       const v = SHOPIFY_VARIANTS.find(v => v.id === CONFIG.variantId);
-      if (v && !v.available) {
-        return false;
-      }
+      if (v && !v.available) return false;
     }
 
     if (!name?.value.trim()||name.value.trim().length<3) { setError("cod-name","cod-name-err",true); valid=false; } else setError("cod-name","cod-name-err",false);
+    
     const rp = phone?.value.replace(/\s/g,"");
     if (!rp||!/^0[5-7]\d{8}$/.test(rp)) { setError("cod-phone","cod-phone-err",true); valid=false; } else setError("cod-phone","cod-phone-err",false);
+
+    // Optional Email Validation (Only flag error if they typed something invalid)
+    const em = email?.value.trim();
+    if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+      setError("cod-email", "cod-email-err", true); valid=false;
+    } else {
+      setError("cod-email", "cod-email-err", false);
+    }
+
     if (!wilaya?.value) { setError("cod-wilaya","cod-wilaya-err",true); valid=false; } else setError("cod-wilaya","cod-wilaya-err",false);
     if (!commune?.value) { setError("cod-commune","cod-commune-err",true); valid=false; } else setError("cod-commune","cod-commune-err",false);
+    
     return valid;
   }
 
@@ -659,23 +662,27 @@
     state.submitting = true;
     const btn = document.getElementById("cod-submit");
     if(btn) { btn.classList.add("loading"); btn.disabled=true; }
+    
     const phone = document.getElementById("cod-phone")?.value.replace(/\s/g,"");
+    const email = document.getElementById("cod-email")?.value.trim().toLowerCase() || null;
     const address = document.getElementById("cod-address")?.value.trim();
     const communeVal = document.getElementById("cod-commune")?.value;
     const eventId = generateEventId();
     const { fbp, fbc } = getFBCookies();
+
     const payload = {
       variant_id: CONFIG.variantId, quantity: state.qty,
       customer_name: document.getElementById("cod-name")?.value.trim(),
-      phone, wilaya: state.wilaya, commune: communeVal,
+      phone, email, wilaya: state.wilaya, commune: communeVal,
       address: address || `${communeVal}, ${state.wilaya}`,
       delivery_type: state.deliveryType, shipping_cost: state.shippingCost,
       product_price: CONFIG.price,
       total: (CONFIG.price * state.qty) + state.shippingCost,
       currency: CONFIG.currency,
-      event_id: eventId, // For CAPI deduplication
-      fbp, fbc,          // Facebook browser cookies for user matching
+      event_id: eventId,
+      fbp, fbc,
     };
+    
     try {
       const resp = await fetch(`${CONFIG.apiBase}/api/create-order`, {
         method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload),
@@ -701,7 +708,6 @@
     if(body) body.style.display="none";
     if(footer) footer.style.display="none";
 
-    // Fill receipt
     setEl("succ-order-id", orderId);
     setEl("succ-variant", state.variantTitle !== "Default Title" ? state.variantTitle : "Standard");
     setEl("succ-qty", state.qty + "x");
@@ -711,8 +717,7 @@
 
     if(success) success.classList.add("visible");
 
-    // Fire all conversion pixels
-    fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id);
+    fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, payload.email, payload.phone);
   }
 
   function formatPhone(input) {
@@ -732,7 +737,7 @@
     if(pi) pi.addEventListener("input",()=>formatPhone(pi));
     const btn=document.getElementById("cod-submit");
     if(btn) btn.addEventListener("click",handleSubmit);
-    ["cod-name","cod-phone","cod-wilaya","cod-commune"].forEach(id=>{
+    ["cod-name","cod-phone","cod-wilaya","cod-commune","cod-email"].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.addEventListener("input",()=>{ el.classList.remove("cod-error"); const e=document.getElementById(id+"-err"); if(e) e.classList.remove("visible"); });
     });
