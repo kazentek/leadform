@@ -92,7 +92,7 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
         },
       },
     ],
-    // test_event_code: "TEST12345", // Uncomment to test in Events Manager
+    test_event_code: "TEST67029", // Uncomment to test in Events Manager
   };
 
   try {
