@@ -164,16 +164,15 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  // 1. The exact local number with the leading zero (e.g., "0662541062")
-  const localPhone = phone.replace(/\s/g, "");
-  if (!/^0[5-7]\d{8}$/.test(localPhone)) {
+  const cleanPhone = phone.replace(/\s/g, "");
+  if (!/^0[5-7]\d{8}$/.test(cleanPhone)) {
     return res.status(400).json({ error: "Invalid phone number" });
   }
 
-  // 2. The international format required strictly for Shopify Customer Profiles
-  let internationalPhone = localPhone;
-  if (localPhone.startsWith("0")) {
-    internationalPhone = "+213" + localPhone.slice(1);
+  // Formatting as International (+213) forces Shopify + Third Parties to not truncate digits
+  let shopifyPhone = cleanPhone;
+  if (cleanPhone.startsWith("0")) {
+    shopifyPhone = "+213" + cleanPhone.slice(1);
   }
 
   const finalEventId = event_id || `cod_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -191,7 +190,7 @@ module.exports = async function handler(req, res) {
   const apiBase   = `https://${SHOP_DOMAIN}/admin/api/2024-01`;
   const headers   = { "Content-Type": "application/json", "X-Shopify-Access-Token": token };
 
-  // ── Find or create customer (Using international phone to prevent Shopify errors) ──
+  // ── Find or create customer ──
   let customerId = null;
   try {
     const createResp = await fetch(`${apiBase}/customers.json`, {
@@ -199,7 +198,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         customer: {
           first_name: firstName, last_name: lastName,
-          phone: internationalPhone, verified_email: false, accepts_marketing: false,
+          phone: shopifyPhone, verified_email: false, accepts_marketing: false,
         },
       }),
     });
@@ -207,7 +206,7 @@ module.exports = async function handler(req, res) {
       customerId = (await createResp.json()).customer?.id || null;
     } else {
       const searchResp = await fetch(
-        `${apiBase}/customers/search.json?query=phone:${encodeURIComponent(internationalPhone)}&limit=1&fields=id`,
+        `${apiBase}/customers/search.json?query=phone:${encodeURIComponent(shopifyPhone)}&limit=1&fields=id`,
         { headers }
       );
       if (searchResp.ok) {
@@ -218,16 +217,15 @@ module.exports = async function handler(req, res) {
     console.warn("[order] Customer step failed:", e.message);
   }
 
-  // ── Build order (Using local phone "06..." for the Shipping Address) ──
+  // ── Build order ──
   const orderPayload = {
     order: {
       line_items: [{ variant_id: Number(variant_id), quantity: Number(quantity), price: String(product_price) }],
-      // WE PASS THE LOCAL PHONE WITH THE '0' DIRECTLY TO THE ADDRESS HERE
-      shipping_address: { first_name: firstName, last_name: lastName, phone: localPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
-      billing_address:  { first_name: firstName, last_name: lastName, phone: localPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
+      shipping_address: { first_name: firstName, last_name: lastName, phone: shopifyPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
+      billing_address:  { first_name: firstName, last_name: lastName, phone: shopifyPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
       financial_status: "pending",
       send_receipt: false, send_fulfillment_receipt: false,
-      note: `Téléphone local: ${localPhone} | COD | ${wilaya} | ${commune} | ${delivery_type === "home" ? "Domicile" : "Stop Desk"} | Shipping: ${shipping_cost} ${currency}`,
+      note: `Téléphone local: ${cleanPhone} | COD | ${wilaya} | ${commune} | ${delivery_type === "home" ? "Domicile" : "Stop Desk"} | Shipping: ${shipping_cost} ${currency}`,
       tags: `COD, ${delivery_type === "home" ? "home-delivery" : "stop-desk"}, ${wilaya}`,
       shipping_lines: [{
         title: delivery_type === "home" ? "Livraison à Domicile" : "Stop Desk",
@@ -235,7 +233,7 @@ module.exports = async function handler(req, res) {
         code: delivery_type === "home" ? "HOME" : "STOPDESK",
       }],
       note_attributes: [
-        { name: "Téléphone local", value: localPhone },
+        { name: "Téléphone local", value: cleanPhone }, // Passes the original untouched phone number string
         { name: "wilaya",        value: wilaya },
         { name: "commune",       value: commune },
         { name: "delivery_type", value: delivery_type },
@@ -267,7 +265,7 @@ module.exports = async function handler(req, res) {
     // ── Fire CAPI and AWAIT it before responding ──
     const capiPayload = {
       ...body,
-      phone: localPhone,
+      phone: cleanPhone,
       total: (Number(product_price) * Number(quantity)) + Number(shipping_cost),
       fbp: fbp || null,
       fbc: fbc || null,
