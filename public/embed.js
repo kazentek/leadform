@@ -1,7 +1,7 @@
 /**
  * COD Lead Form System — Algeria
  * Premium Redesign v4 (With Variant Sync, Order Receipt, Email & Conversion Events)
- * Clean version: Removed fake urgency elements (timer & viewer count)
+ * ULTRA-FAST PIXEL LOAD EDITION
  */
 (function () {
   "use strict";
@@ -26,6 +26,45 @@
     Object.assign(CONFIG, window.__COD_CONFIG__);
   }
 
+  /* ─────────────────────────────────────────────
+     🚀 1. INSTANT FACEBOOK PIXEL INITIALIZATION
+     Fires immediately, doesn't wait for DOM to load
+  ───────────────────────────────────────────── */
+  function initFacebookPixel() {
+    // Get Pixel ID from global window OR from the script tag dataset
+    const pixelId = window.__FB_PIXEL_ID__ || currentScript.dataset.fbPixelId;
+    
+    if (!pixelId) return;
+
+    // Performance Boost: Tell browser to connect to FB servers early
+    try {
+      const preconnect = document.createElement("link");
+      preconnect.rel = "preconnect";
+      preconnect.href = "https://connect.facebook.net";
+      document.head.appendChild(preconnect);
+    } catch(e) {}
+
+    if (typeof fbq !== "function") {
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
+        n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];
+        t=b.createElement(e);t.async=!0;t.src=v;
+        s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s);
+      }(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
+      
+      fbq("init", pixelId);
+      fbq("track", "PageView");
+      console.log("[COD Pixel] ⚡ Facebook Pixel loaded instantly:", pixelId);
+    }
+  }
+
+  // EXECUTE IMMEDIATELY
+  initFacebookPixel();
+
+
+  /* ─────────────────────────────────────────────
+     2. FORM CONFIG & DATA
+  ───────────────────────────────────────────── */
   const SHIPPING = {
     Adrar: { stopdesk: 700, home: 1450 },
     Chlef: { stopdesk: 400, home: 750 },
@@ -345,24 +384,8 @@
   }
 
   /* ─────────────────────────────────────────────
-     FACEBOOK PIXEL HELPERS
+     DATA CAPTURE FOR CAPI & OTHER PIXELS
   ───────────────────────────────────────────── */
-  function initFacebookPixel() {
-    const pixelId = window.__FB_PIXEL_ID__;
-    if (!pixelId) return;
-    if (typeof fbq !== "function") {
-      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
-        n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];
-        t=b.createElement(e);t.async=!0;t.src=v;
-        s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s);
-      }(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
-      fbq("init", pixelId);
-      fbq("track", "PageView");
-      console.log("[COD Pixel] Facebook Pixel initialized:", pixelId);
-    }
-  }
-
   function getFBCookies() {
     const cookies = document.cookie.split(";").reduce((acc, c) => {
       const idx = c.indexOf("=");
@@ -389,16 +412,15 @@
   }
 
   /* ─────────────────────────────────────────────
-     CONVERSION EVENTS
+     CONVERSION EVENTS (Fired on Submit)
   ───────────────────────────────────────────── */
   function fireConversionEvents(orderId, total, variantId, eventId, email, phone) {
-    const valueUSD  = parseFloat((total / 136).toFixed(2));
+    const valueUSD  = parseFloat((total / 260).toFixed(2));
     const valueDZD  = parseFloat(total);
     const contentId = String(variantId || CONFIG.variantId || "");
 
     try {
       if (typeof fbq === "function") {
-        // Send email/phone in client-side Advanced Matching if available
         let advancedMatching = {};
         if (email) advancedMatching.em = email.toLowerCase().trim();
         if (phone) advancedMatching.ph = phone.replace(/\s/g, "");
@@ -412,9 +434,8 @@
           num_items: state.qty,
           order_id: orderId,
         }, { eventID: eventId });
-        console.log("[COD Pixel] ✅ Facebook Purchase fired — $" + valueUSD + " | eventID: " + eventId);
       }
-    } catch(e) { console.warn("[COD Pixel] Facebook error:", e.message); }
+    } catch(e) { }
 
     try {
       if (typeof gtag === "function") {
@@ -425,13 +446,12 @@
           items: [{
             item_id: contentId,
             item_name: CONFIG.productTitle,
-            price: parseFloat((CONFIG.price / 136).toFixed(2)),
+            price: parseFloat((CONFIG.price / 260).toFixed(2)),
             quantity: state.qty,
           }],
         });
-        console.log("[COD Pixel] ✅ Google Analytics purchase fired");
       }
-    } catch(e) { console.warn("[COD Pixel] GA4 error:", e.message); }
+    } catch(e) { }
 
     try {
       if (typeof ttq !== "undefined" && typeof ttq.track === "function") {
@@ -481,7 +501,7 @@
             items: [{
               item_id: contentId,
               item_name: CONFIG.productTitle,
-              price: parseFloat((CONFIG.price / 136).toFixed(2)),
+              price: parseFloat((CONFIG.price / 260).toFixed(2)),
               quantity: state.qty,
             }],
           },
@@ -636,7 +656,6 @@
     const rp = phone?.value.replace(/\s/g,"");
     if (!rp||!/^0[5-7]\d{8}$/.test(rp)) { setError("cod-phone","cod-phone-err",true); valid=false; } else setError("cod-phone","cod-phone-err",false);
 
-    // Optional Email Validation (Only flag error if they typed something invalid)
     const em = email?.value.trim();
     if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
       setError("cod-email", "cod-email-err", true); valid=false;
@@ -749,6 +768,9 @@
     if(p) p.disabled=state.qty>=state.maxQty;
   }
 
+  /* ─────────────────────────────────────────────
+     3. BUILD THE UI (Waits for DOM)
+  ───────────────────────────────────────────── */
   function init() {
     injectStyles();
     let mount=document.getElementById("cod-form-mount")||document.querySelector("[data-cod-form]");
@@ -761,13 +783,14 @@
     root.id="cod-form-root";
     root.innerHTML=buildHTML();
     mount.appendChild(root);
-    initFacebookPixel();
+    
     calcAndRender(); updateQtyBtns();
     loadCommunes();
     fetchShopifyVariants().then(()=>{ fetchStock(); });
     bindEvents();
   }
 
+  // Only the visual form waits for the DOM to load now!
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
   else init();
 })();
