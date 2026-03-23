@@ -364,25 +364,28 @@
       return acc;
     }, {});
 
-    // _fbp: Facebook browser ID (set by pixel automatically)
     const fbp = cookies["_fbp"] || null;
 
-    // _fbc: Facebook click ID — from cookie OR built from URL fbclid param
-    // This is the key for ad attribution — which campaign drove the sale
-    let fbc = cookies["_fbc"] || null;
+    // Priority 1: fbclid directly in the current URL (most accurate — means
+    // the customer just clicked an ad and landed on this exact page)
+    let fbc = null;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const fbclid = urlParams.get("fbclid");
+      if (fbclid) {
+        fbc = "fb.1." + Date.now() + "." + fbclid;
+        console.log("[COD Pixel] fbclid from URL — direct ad click attribution");
+      }
+    } catch(e) {}
+
+    // Priority 2: existing _fbc cookie (set by Facebook pixel on previous visit)
+    // Only use if no fresh fbclid in current URL
     if (!fbc) {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const fbclid = urlParams.get("fbclid");
-        if (fbclid) {
-          // Format: fb.{subdomain_index}.{timestamp}.{fbclid}
-          fbc = "fb.1." + Date.now() + "." + fbclid;
-          // Persist in cookie for 90 days in case user navigates
-          document.cookie = "_fbc=" + fbc + "; path=/; max-age=7776000; SameSite=Lax";
-          console.log("[COD Pixel] fbclid captured from URL for attribution");
-        }
-      } catch(e) {}
+      fbc = cookies["_fbc"] || null;
     }
+
+    // Do NOT manually write _fbc cookie — Facebook pixel manages this
+    // Writing it ourselves can preserve stale old-campaign attribution
 
     return { fbp, fbc };
   }
@@ -395,7 +398,7 @@
      CONVERSION EVENTS
   ───────────────────────────────────────────── */
   function fireConversionEvents(orderId, total, variantId, eventId) {
-    const valueUSD  = parseFloat((total / 260).toFixed(2));
+    const valueUSD  = parseFloat((total / 136).toFixed(2));
     const valueDZD  = parseFloat(total);
     const contentId = String(variantId || CONFIG.variantId || "");
 
@@ -423,7 +426,7 @@
           items: [{
             item_id: contentId,
             item_name: CONFIG.productTitle,
-            price: parseFloat((CONFIG.price / 260).toFixed(2)),
+            price: parseFloat((CONFIG.price / 136).toFixed(2)),
             quantity: state.qty,
           }],
         });
@@ -482,7 +485,7 @@
             items: [{
               item_id: contentId,
               item_name: CONFIG.productTitle,
-              price: parseFloat((CONFIG.price / 260).toFixed(2)),
+              price: parseFloat((CONFIG.price / 136).toFixed(2)),
               quantity: state.qty,
             }],
           },
