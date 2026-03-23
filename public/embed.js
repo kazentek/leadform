@@ -25,7 +25,7 @@
     Object.assign(CONFIG, window.__COD_CONFIG__);
   }
 
-  const SHIPPING = {
+const SHIPPING = {
     Adrar: { stopdesk: 700, home: 1450 },
     Chlef: { stopdesk: 400, home: 750 },
     Laghouat: { stopdesk: 550, home: 950 },
@@ -82,7 +82,6 @@
     Timimoun: { stopdesk: 700, home: 1450 },
     "In Salah": { stopdesk: 900, home: 1650 },
   };
-
   let COMMUNES_BY_WILAYA = {};
   let SHOPIFY_VARIANTS = [];
 
@@ -353,18 +352,47 @@
   }
 
   /* ─────────────────────────────────────────────
-     CONVERSION EVENTS
-     Fires Facebook, Google, TikTok, Snapchat
-     pixels right after a successful order.
+     FACEBOOK PIXEL HELPERS
   ───────────────────────────────────────────── */
-  function fireConversionEvents(orderId, total, variantId) {
-    // DZD → USD approximate conversion for pixel reporting
-    // Facebook & Google don't support DZD natively
-    const valueUSD = parseFloat((total / 136).toFixed(2));
-    const valueDZD = parseFloat(total);
+  function initFacebookPixel() {
+    const pixelId = window.__FB_PIXEL_ID__;
+    if (!pixelId) return;
+    if (typeof fbq !== "function") {
+      !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){
+        n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version="2.0";n.queue=[];
+        t=b.createElement(e);t.async=!0;t.src=v;
+        s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s);
+      }(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
+      fbq("init", pixelId);
+      fbq("track", "PageView");
+      console.log("[COD Pixel] Facebook Pixel initialized:", pixelId);
+    }
+  }
+
+  function getFBCookies() {
+    const cookies = document.cookie.split(";").reduce((acc, c) => {
+      const [k, v] = c.trim().split("="); acc[k] = v; return acc;
+    }, {});
+    return { fbp: cookies["_fbp"] || null, fbc: cookies["_fbc"] || null };
+  }
+
+  function generateEventId() {
+    return "cod_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+  }
+
+  /* ─────────────────────────────────────────────
+     CONVERSION EVENTS
+     Browser pixel fires here.
+     Server-side CAPI fires in create-order.js.
+     Same event_id → Facebook deduplicates both.
+  ───────────────────────────────────────────── */
+  function fireConversionEvents(orderId, total, variantId, eventId) {
+    const valueUSD  = parseFloat((total / 136).toFixed(2));
+    const valueDZD  = parseFloat(total);
     const contentId = String(variantId || CONFIG.variantId || "");
 
-    // ── 1. Facebook / Meta Pixel ──
+    // ── 1. Facebook / Meta Pixel (browser) ──
     try {
       if (typeof fbq === "function") {
         fbq("track", "Purchase", {
@@ -375,8 +403,8 @@
           content_name: CONFIG.productTitle,
           num_items: state.qty,
           order_id: orderId,
-        });
-        console.log("[COD Pixel] ✅ Facebook Purchase fired — $" + valueUSD);
+        }, { eventID: eventId });
+        console.log("[COD Pixel] ✅ Facebook Purchase fired — $" + valueUSD + " | eventID: " + eventId);
       }
     } catch(e) { console.warn("[COD Pixel] Facebook error:", e.message); }
 
@@ -589,6 +617,8 @@
     const phone = document.getElementById("cod-phone")?.value.replace(/\s/g,"");
     const address = document.getElementById("cod-address")?.value.trim();
     const communeVal = document.getElementById("cod-commune")?.value;
+    const eventId = generateEventId();
+    const { fbp, fbc } = getFBCookies();
     const payload = {
       variant_id: CONFIG.variantId, quantity: state.qty,
       customer_name: document.getElementById("cod-name")?.value.trim(),
@@ -598,6 +628,8 @@
       product_price: CONFIG.price,
       total: (CONFIG.price * state.qty) + state.shippingCost,
       currency: CONFIG.currency,
+      event_id: eventId, // For CAPI deduplication
+      fbp, fbc,          // Facebook browser cookies for user matching
     };
     try {
       const resp = await fetch(`${CONFIG.apiBase}/api/create-order`, {
@@ -636,7 +668,7 @@
     clearInterval(timerInterval);
 
     // Fire all conversion pixels
-    fireConversionEvents(orderId, payload.total, CONFIG.variantId);
+    fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id);
   }
 
   function formatPhone(input) {
@@ -696,6 +728,7 @@
     root.id="cod-form-root";
     root.innerHTML=buildHTML();
     mount.appendChild(root);
+    initFacebookPixel();
     calcAndRender(); updateQtyBtns(); startTimer(); animateCounters();
     loadCommunes();
     fetchShopifyVariants().then(()=>{ fetchStock(); });
