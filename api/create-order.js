@@ -259,7 +259,8 @@ module.exports = async function handler(req, res) {
     const order = orderData.order;
     console.log(`[order] ✅ Created: ${order.name} — ${customer_name} — ${wilaya}`);
 
-    // ── Fire CAPI in background (don't await — don't block response) ──
+    // ── Fire CAPI and AWAIT it before responding ──
+    // Vercel kills background promises after res.json() — must await
     const capiPayload = {
       ...body,
       phone: cleanPhone,
@@ -267,9 +268,12 @@ module.exports = async function handler(req, res) {
       fbp: fbp || null,
       fbc: fbc || null,
     };
-    fireFacebookCAPI(capiPayload, order.name, finalEventId).catch(e =>
-      console.error("[CAPI] Background fire failed:", e.message)
-    );
+    try {
+      await fireFacebookCAPI(capiPayload, order.name, finalEventId);
+    } catch(e) {
+      console.error("[CAPI] Failed:", e.message);
+      // Don't block order response if CAPI fails
+    }
 
     return res.status(200).json({
       success: true,
