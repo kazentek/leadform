@@ -357,10 +357,34 @@
   }
 
   function getFBCookies() {
+    // Parse all cookies
     const cookies = document.cookie.split(";").reduce((acc, c) => {
-      const [k, v] = c.trim().split("="); acc[k] = v; return acc;
+      const idx = c.indexOf("=");
+      if (idx > -1) acc[c.slice(0, idx).trim()] = c.slice(idx + 1).trim();
+      return acc;
     }, {});
-    return { fbp: cookies["_fbp"] || null, fbc: cookies["_fbc"] || null };
+
+    // _fbp: Facebook browser ID (set by pixel automatically)
+    const fbp = cookies["_fbp"] || null;
+
+    // _fbc: Facebook click ID — from cookie OR built from URL fbclid param
+    // This is the key for ad attribution — which campaign drove the sale
+    let fbc = cookies["_fbc"] || null;
+    if (!fbc) {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fbclid = urlParams.get("fbclid");
+        if (fbclid) {
+          // Format: fb.{subdomain_index}.{timestamp}.{fbclid}
+          fbc = "fb.1." + Date.now() + "." + fbclid;
+          // Persist in cookie for 90 days in case user navigates
+          document.cookie = "_fbc=" + fbc + "; path=/; max-age=7776000; SameSite=Lax";
+          console.log("[COD Pixel] fbclid captured from URL for attribution");
+        }
+      } catch(e) {}
+    }
+
+    return { fbp, fbc };
   }
 
   function generateEventId() {
