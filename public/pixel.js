@@ -13,6 +13,6 @@
     s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s);
   }(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
-  fbq('init', 'YOUR_PIXEL_ID_HERE');
+  fbq('init', '1141342971356278');
   fbq('track', 'PageView');
 })();
