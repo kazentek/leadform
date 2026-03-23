@@ -69,7 +69,7 @@ const SHIPPING = {
     "Souk Ahras": { stopdesk: 400, home: 850 },
     Tipaza: { stopdesk: 350, home: 550 },
     Mila: { stopdesk: 400, home: 800 },
-    "Ain Defla": { stopdesk: 400, home: 750 },
+    "Aïn Defla": { stopdesk: 400, home: 750 },
     Naama: { stopdesk: 600, home: 1150 },
     "Ain Temouchent": { stopdesk: 400, home: 750 },
     Ghardaia: { stopdesk: 550, home: 1000 },
