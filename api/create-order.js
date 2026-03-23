@@ -51,12 +51,37 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
 
   const valueUSD = parseFloat((payload.total / 136).toFixed(2));
 
-  const hashedPhone = crypto.createHash("sha256")
-    .update(payload.phone.replace(/\s/g, "")).digest("hex");
-  const hashedCity = crypto.createHash("sha256")
-    .update((payload.commune || "").toLowerCase().replace(/\s/g, "")).digest("hex");
-  const hashedState = crypto.createHash("sha256")
-    .update((payload.wilaya || "").toLowerCase().replace(/\s/g, "")).digest("hex");
+  // Shorthand hasher
+  const h = (str) => crypto.createHash("sha256").update(str).digest("hex");
+
+  const hashedPhone = h(payload.phone.replace(/\s/g, ""));
+  const hashedCity  = h((payload.commune || "").toLowerCase().replace(/\s/g, ""));
+  const hashedState = h((payload.wilaya  || "").toLowerCase().replace(/\s/g, ""));
+
+  // Hash Email if provided
+  const hashedEmail = payload.email ? h(payload.email.toLowerCase().trim()) : null;
+
+  // Hash name
+  const nameParts = (payload.customer_name || "").trim().split(/\s+/);
+  const hashedFn  = h((nameParts[0] || "").toLowerCase());
+  const hashedLn  = nameParts.length > 1
+    ? h(nameParts.slice(1).join(" ").toLowerCase()) : null;
+
+  // External ID (phone-based)
+  const hashedExtId = h(payload.phone.replace(/\s/g, ""));
+
+  const userData = {
+    ph:          [hashedPhone],
+    fn:          [hashedFn],
+    country:     [h("dz")],
+    ct:          [hashedCity],
+    st:          [hashedState],
+    external_id: [hashedExtId],
+    ...(hashedEmail ? { em:  [hashedEmail] } : {}), // Added Email
+    ...(hashedLn    ? { ln:  [hashedLn]    } : {}),
+    ...(payload.fbp ? { fbp: payload.fbp   } : {}),
+    ...(payload.fbc ? { fbc: payload.fbc   } : {}),
+  };
 
   const eventData = {
     data: [{
@@ -65,12 +90,7 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
       event_id: eventId,
       action_source: "website",
       event_source_url: `https://${process.env.SHOP_DOMAIN}/products`,
-      user_data: {
-        ph: [hashedPhone],
-        country: [crypto.createHash("sha256").update("dz").digest("hex")],
-        ct: [hashedCity],
-        st: [hashedState],
-      },
+      user_data: userData,
       custom_data: {
         value: valueUSD,
         currency: "USD",
@@ -118,17 +138,8 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
       });
     });
 
-    req.on("error", (err) => {
-      console.error("[CAPI] ❌ Request error:", err.message);
-      resolve();
-    });
-
-    req.setTimeout(8000, () => {
-      console.error("[CAPI] ❌ Timeout after 8s");
-      req.destroy();
-      resolve();
-    });
-
+    req.on("error", (err) => resolve());
+    req.setTimeout(8000, () => { req.destroy(); resolve(); });
     req.write(body);
     req.end();
   });
@@ -153,11 +164,10 @@ module.exports = async function handler(req, res) {
   }
 
   const {
-    variant_id, quantity, customer_name, phone,
+    variant_id, quantity, customer_name, phone, email, // Added email here
     wilaya, commune, address, delivery_type,
     shipping_cost, product_price, currency = "DZD",
-    event_id, 
-    fbp, fbc, 
+    event_id, fbp, fbc, 
   } = body;
 
   if (!variant_id || !quantity || !customer_name || !phone || !wilaya || !commune) {
@@ -169,11 +179,8 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Invalid phone number" });
   }
 
-  // Formatting as International (+213) forces Shopify + Third Parties to not truncate digits
   let shopifyPhone = cleanPhone;
-  if (cleanPhone.startsWith("0")) {
-    shopifyPhone = "+213" + cleanPhone.slice(1);
-  }
+  if (cleanPhone.startsWith("0")) shopifyPhone = "+213" + cleanPhone.slice(1);
 
   const finalEventId = event_id || `cod_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
@@ -198,7 +205,9 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         customer: {
           first_name: firstName, last_name: lastName,
-          phone: shopifyPhone, verified_email: false, accepts_marketing: false,
+          phone: shopifyPhone, 
+          ...(email ? { email: email.toLowerCase().trim() } : {}), // Pass email to Shopify Customer
+          verified_email: false, accepts_marketing: false,
         },
       }),
     });
@@ -220,6 +229,7 @@ module.exports = async function handler(req, res) {
   // ── Build order ──
   const orderPayload = {
     order: {
+      ...(email ? { email: email.toLowerCase().trim() } : {}), // Pass email to Shopify Order
       line_items: [{ variant_id: Number(variant_id), quantity: Number(quantity), price: String(product_price) }],
       shipping_address: { first_name: firstName, last_name: lastName, phone: shopifyPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
       billing_address:  { first_name: firstName, last_name: lastName, phone: shopifyPhone, address1: addr, city: commune, province: wilaya, country: "DZ", country_code: "DZ", zip: "" },
@@ -233,7 +243,7 @@ module.exports = async function handler(req, res) {
         code: delivery_type === "home" ? "HOME" : "STOPDESK",
       }],
       note_attributes: [
-        { name: "Téléphone local", value: cleanPhone }, // Passes the original untouched phone number string
+        { name: "Téléphone local", value: cleanPhone },
         { name: "wilaya",        value: wilaya },
         { name: "commune",       value: commune },
         { name: "delivery_type", value: delivery_type },
@@ -266,6 +276,7 @@ module.exports = async function handler(req, res) {
     const capiPayload = {
       ...body,
       phone: cleanPhone,
+      email: email, // ensure passed to CAPI function
       total: (Number(product_price) * Number(quantity)) + Number(shipping_cost),
       fbp: fbp || null,
       fbc: fbc || null,
