@@ -64,7 +64,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const varResp = await fetch(
-      `https://${SHOP_DOMAIN}/admin/api/2024-01/variants/${variant_id}.json`,
+      `https://${SHOP_DOMAIN}/admin/api/2026-01/variants/${variant_id}.json`,
       {
         headers: { "X-Shopify-Access-Token": token, "Content-Type": "application/json" },
       }
