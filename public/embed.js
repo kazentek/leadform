@@ -345,7 +345,7 @@
           <div class="cod-spinner"></div>
         </button>
 
-        <div class="cod-terms-text">En passant commande, vous acceptez nos conditions générales de vente.</div>
+        <div class="cod-terms-text">En passant commande, vous acceptez nos conditions générales de vente et d'utilisation.</div>
       </div>
 
       <div class="cod-footer">
