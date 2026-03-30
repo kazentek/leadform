@@ -28,15 +28,11 @@
 
   /* ─────────────────────────────────────────────
      🚀 1. INSTANT FACEBOOK PIXEL INITIALIZATION
-     Fires immediately, doesn't wait for DOM to load
   ───────────────────────────────────────────── */
   function initFacebookPixel() {
-    // Get Pixel ID from global window OR from the script tag dataset
     const pixelId = window.__FB_PIXEL_ID__ || currentScript.dataset.fbPixelId;
-    
     if (!pixelId) return;
 
-    // Performance Boost: Tell browser to connect to FB servers early
     try {
       const preconnect = document.createElement("link");
       preconnect.rel = "preconnect";
@@ -58,9 +54,7 @@
     }
   }
 
-  // EXECUTE IMMEDIATELY
   initFacebookPixel();
-
 
   /* ─────────────────────────────────────────────
      2. FORM CONFIG & DATA
@@ -217,12 +211,20 @@
       .cod-receipt-val { color: #111827; font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
       .cod-receipt-total { display: flex; justify-content: space-between; border-top: 1px solid #E5E7EB; margin-top: 12px; padding-top: 12px; font-size: 16px; font-weight: 800; color: #111827; }
       .cod-receipt-total .cod-receipt-val { color: #FF5A1F; }
+      
+      /* Sticky Button Styles */
+      .cod-sticky-wrapper { position: fixed; bottom: -100px; left: 0; width: 100%; padding: 12px 20px; background: #ffffff; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); z-index: 99999; display: flex; justify-content: center; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid #E5E7EB; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+      .cod-sticky-wrapper.visible { bottom: 0; }
+      .cod-sticky-trigger { width: 100%; max-width: 400px; height: 52px; background: #FF5A1F; color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px -4px rgba(255,90,31,0.4); cursor: pointer; transition: transform 0.2s ease; font-family: inherit; }
+      .cod-sticky-trigger:active { transform: scale(0.98); }
+      
       @media (max-width: 480px) {
         #cod-form-root { border-radius: 16px; border-left: none; border-right: none; border-top: 1px solid #E5E7EB; }
         .cod-row { grid-template-columns: 1fr; gap: 12px; }
         .cod-delivery-grid { grid-template-columns: 1fr; }
         .cod-header { padding: 24px 20px 16px; }
         .cod-body { padding: 20px; gap: 16px; }
+        .cod-sticky-wrapper { padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
       }
     `;
     document.head.appendChild(style);
@@ -741,6 +743,7 @@
       if (!resp.ok) throw new Error(data.error||"Order failed");
       state.submitted = true;
       showSuccess(data.order_id||data.order?.name||"#COD-"+Date.now().toString().slice(-6), payload);
+      hideStickyBarForever(); // Hide the floating button since they ordered
     } catch(err) {
       if(btn) {
         btn.classList.remove("loading"); btn.disabled=false;
@@ -806,7 +809,65 @@
   }
 
   /* ─────────────────────────────────────────────
-     3. BUILD THE UI (Waits for DOM)
+     4. STICKY ACTION BUTTON LOGIC
+  ───────────────────────────────────────────── */
+  function initStickyBar() {
+    const stickyBar = document.createElement("div");
+    stickyBar.id = "cod-sticky-bar";
+    stickyBar.className = "cod-sticky-wrapper";
+    stickyBar.innerHTML = `
+      <button class="cod-sticky-trigger" type="button">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+        Commander Maintenant
+      </button>
+    `;
+    document.body.appendChild(stickyBar);
+
+    const triggerBtn = stickyBar.querySelector(".cod-sticky-trigger");
+    triggerBtn.addEventListener("click", () => {
+      const root = document.getElementById("cod-form-root");
+      if (root) {
+        // Scroll to form
+        root.scrollIntoView({ behavior: "smooth", block: "start" });
+        // After scrolling, focus the first input field to pop open the keyboard
+        setTimeout(() => {
+          const nameInput = document.getElementById("cod-name");
+          if (nameInput) nameInput.focus({ preventScroll: true });
+        }, 600);
+      }
+    });
+
+    // Intersection Observer to show/hide the sticky bar dynamically
+    const rootEl = document.getElementById("cod-form-root");
+    if (rootEl && "IntersectionObserver" in window) {
+      const observer = new IntersectionObserver((entries) => {
+        if (state.submitted) return; // Do nothing if order is already placed
+        entries.forEach(entry => {
+          // If the form is highly visible (user is looking at it), hide the sticky bar
+          if (entry.isIntersecting) {
+            stickyBar.classList.remove("visible");
+          } else {
+            // If the user scrolls past or away from the form, show the sticky bar
+            stickyBar.classList.add("visible");
+          }
+        });
+      }, {
+        threshold: 0.1 // Triggers when 10% of the form is visible
+      });
+      observer.observe(rootEl);
+    } else {
+      // Fallback for very old browsers: just show it after 2 seconds
+      setTimeout(() => { if (!state.submitted) stickyBar.classList.add("visible"); }, 2000);
+    }
+  }
+
+  function hideStickyBarForever() {
+    const stickyBar = document.getElementById("cod-sticky-bar");
+    if (stickyBar) stickyBar.classList.remove("visible");
+  }
+
+  /* ─────────────────────────────────────────────
+     5. BUILD THE UI (Waits for DOM)
   ───────────────────────────────────────────── */
   function init() {
     injectStyles();
@@ -825,6 +886,9 @@
     loadCommunes();
     fetchShopifyVariants().then(()=>{ fetchStock(); });
     bindEvents();
+
+    // Initialize the Smart Sticky Button
+    initStickyBar();
   }
 
   // Only the visual form waits for the DOM to load now!
