@@ -688,6 +688,15 @@
     if (!wilaya?.value) { setError("cod-wilaya","cod-wilaya-err",true); valid=false; } else setError("cod-wilaya","cod-wilaya-err",false);
     if (!commune?.value) { setError("cod-commune","cod-commune-err",true); valid=false; } else setError("cod-commune","cod-commune-err",false);
     
+    // Smooth scroll to the first error input and focus it
+    if (!valid) {
+      const firstError = document.querySelector('#cod-form-root .cod-error');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstError.focus({ preventScroll: true });
+      }
+    }
+
     return valid;
   }
 
@@ -756,7 +765,13 @@
     setEl("succ-location", `${payload.commune}, ${payload.wilaya}`);
     setEl("succ-total", payload.total.toLocaleString("fr-DZ") + " " + CONFIG.currency);
 
-    if(success) success.classList.add("visible");
+    if(success) {
+      success.classList.add("visible");
+      // Smooth scroll to the success message (receipt)
+      setTimeout(() => {
+        success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 50);
+    }
 
     fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, payload.email, payload.phone);
   }
