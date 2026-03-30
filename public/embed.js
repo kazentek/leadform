@@ -201,6 +201,9 @@
       @keyframes codSpin { to { transform: rotate(360deg); } }
       .cod-footer { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: -4px; padding-bottom: 24px; font-size: 12px; color: #6B7280; font-weight: 500; text-align: center; }
       .cod-footer svg { color: #059669; flex-shrink: 0; }
+      .cod-terms-text { font-size: 11px; color: #9CA3AF; text-align: center; margin-top: -8px; font-weight: 500; }
+      .cod-urgency { font-size: 13px; color: #EF4444; font-weight: 700; text-align: center; padding: 8px 12px; background: #FEF2F2; border-radius: 8px; border: 1px dashed #F87171; animation: codPulse 2s infinite; }
+      @keyframes codPulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
       .cod-success { display: none; flex-direction: column; align-items: center; text-align: center; padding: 40px 24px; background: #fff; }
       .cod-success.visible { display: flex; animation: slideIn 0.4s ease forwards; }
       @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -335,10 +338,14 @@
           </div>
         </div>
 
+        <div id="cod-urgency-msg" class="cod-urgency" style="display:none;"></div>
+
         <button class="cod-submit-btn" id="cod-submit" type="button">
           <span class="cod-btn-text">Confirmer ma commande</span>
           <div class="cod-spinner"></div>
         </button>
+
+        <div class="cod-terms-text">En passant commande, vous acceptez nos conditions générales de vente.</div>
       </div>
 
       <div class="cod-footer">
@@ -615,11 +622,26 @@
 
   async function fetchStock() {
     if (!CONFIG.variantId) return;
+    const urgencyEl = document.getElementById("cod-urgency-msg");
+    if (urgencyEl) urgencyEl.style.display = "none";
+
     try {
       const resp = await fetch(`${CONFIG.apiBase}/api/stock?variant_id=${CONFIG.variantId}`);
       if (!resp.ok) return;
       const { inventory } = await resp.json();
-      if (typeof inventory === "number" && inventory > 0) { state.maxQty = inventory; updateQtyBtns(); }
+      
+      if (typeof inventory === "number" && inventory > 0) { 
+        state.maxQty = inventory; 
+        updateQtyBtns(); 
+        
+        if (inventory === 1 && urgencyEl) {
+          urgencyEl.textContent = "🔥 DERNIÈRE CHANCE : Seulement 1 article en stock !";
+          urgencyEl.style.display = "block";
+        } else if (inventory === 2 && urgencyEl) {
+          urgencyEl.textContent = "🔥 DERNIÈRE CHANCE : Seulement 2 articles en stock !";
+          urgencyEl.style.display = "block";
+        }
+      }
     } catch(_) {}
   }
 
