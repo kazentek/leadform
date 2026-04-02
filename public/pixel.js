@@ -92,7 +92,7 @@
       content_ids:  [String(p.variantId)],
       content_type: "product",
       content_name: p.title,
-      value:        parseFloat((p.price / 136).toFixed(2)),
+      value:        parseFloat((p.price / 260).toFixed(2)),
       currency:     "USD",
     });
     console.log("[Pixel] ViewContent fired ✅");
