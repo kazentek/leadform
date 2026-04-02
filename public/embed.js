@@ -1,6 +1,6 @@
 /**
  * COD Lead Form System — Algeria
- * Premium Redesign v4 (With Variant Sync, Order Receipt, Email & Conversion Events)
+ * Premium Redesign v5 (Sticky Button, Auto-Scroll, Urgency, Advanced FB Pixel Tracking)
  * ULTRA-FAST PIXEL LOAD EDITION
  */
 (function () {
@@ -33,6 +33,7 @@
     const pixelId = window.__FB_PIXEL_ID__ || currentScript.dataset.fbPixelId;
     if (!pixelId) return;
 
+    // Performance Boost: Tell browser to connect to FB servers early
     try {
       const preconnect = document.createElement("link");
       preconnect.rel = "preconnect";
@@ -60,60 +61,24 @@
      2. FORM CONFIG & DATA
   ───────────────────────────────────────────── */
   const SHIPPING = {
-    Adrar: { stopdesk: 700, home: 1450 },
-    Chlef: { stopdesk: 400, home: 750 },
-    Laghouat: { stopdesk: 550, home: 950 },
-    "Oum El Bouaghi": { stopdesk: 400, home: 750 },
-    Batna: { stopdesk: 400, home: 800 },
-    "Béjaïa": { stopdesk: 400, home: 750 },
-    Biskra: { stopdesk: 500, home: 950 },
-    "Béchar": { stopdesk: 600, home: 1150 },
-    Blida: { stopdesk: 350, home: 550 },
-    Bouira: { stopdesk: 400, home: 700 },
-    Tamanrasset: { stopdesk: 950, home: 1750 },
-    "Tébessa": { stopdesk: 400, home: 850 },
-    Tlemcen: { stopdesk: 400, home: 800 },
-    Tiaret: { stopdesk: 400, home: 850 },
-    "Tizi Ouzou": { stopdesk: 350, home: 700 },
-    Alger: { stopdesk: 300, home: 450 },
-    Djelfa: { stopdesk: 550, home: 950 },
-    Jijel: { stopdesk: 400, home: 800 },
-    "Sétif": { stopdesk: 400, home: 750 },
-    "Saïda": { stopdesk: 400, home: 850 },
-    Skikda: { stopdesk: 400, home: 800 },
-    "Sidi Bel Abbès": { stopdesk: 400, home: 750 },
-    Annaba: { stopdesk: 400, home: 750 },
-    Guelma: { stopdesk: 400, home: 850 },
-    Constantine: { stopdesk: 400, home: 750 },
-    "Médéa": { stopdesk: 400, home: 700 },
-    Mostaganem: { stopdesk: 400, home: 750 },
-    "M'Sila": { stopdesk: 400, home: 800 },
-    Mascara: { stopdesk: 400, home: 750 },
-    Ouargla: { stopdesk: 550, home: 1050 },
-    Oran: { stopdesk: 400, home: 750 },
-    "El Bayadh": { stopdesk: 600, home: 1150 },
-    Illizi: { stopdesk: 1000, home: 1850 },
-    "Bordj Bou Arreridj": { stopdesk: 400, home: 750 },
-    "Boumerdès": { stopdesk: 300, home: 550 },
-    "El Tarf": { stopdesk: 400, home: 850 },
-    Tindouf: { stopdesk: 700, home: 1350 },
-    Tissemsilt: { stopdesk: 400, home: 800 },
-    "El Oued": { stopdesk: 550, home: 1100 },
-    Khenchela: { stopdesk: 400, home: 850 },
-    "Souk Ahras": { stopdesk: 400, home: 850 },
-    Tipaza: { stopdesk: 350, home: 550 },
-    Mila: { stopdesk: 400, home: 800 },
-    "Aïn Defla": { stopdesk: 400, home: 750 },
-    "Naâma": { stopdesk: 600, home: 1150 },
-    "Aïn Témouchent": { stopdesk: 400, home: 750 },
-    "Ghardaïa": { stopdesk: 550, home: 1000 },
-    Relizane: { stopdesk: 400, home: 800 },
-    "Ouled Djellal": { stopdesk: 550, home: 950 },
-    "El Menia": { stopdesk: 550, home: 1100 },
-    "El Meghaier": { stopdesk: 600, home: 1050 },
-    Touggourt: { stopdesk: 550, home: 1050 },
-    "Béni Abbès": { stopdesk: 750, home: 1150 },
-    Timimoun: { stopdesk: 700, home: 1450 },
+    Adrar: { stopdesk: 700, home: 1450 }, Chlef: { stopdesk: 400, home: 750 }, Laghouat: { stopdesk: 550, home: 950 },
+    "Oum El Bouaghi": { stopdesk: 400, home: 750 }, Batna: { stopdesk: 400, home: 800 }, "Béjaïa": { stopdesk: 400, home: 750 },
+    Biskra: { stopdesk: 500, home: 950 }, "Béchar": { stopdesk: 600, home: 1150 }, Blida: { stopdesk: 350, home: 550 },
+    Bouira: { stopdesk: 400, home: 700 }, Tamanrasset: { stopdesk: 950, home: 1750 }, "Tébessa": { stopdesk: 400, home: 850 },
+    Tlemcen: { stopdesk: 400, home: 800 }, Tiaret: { stopdesk: 400, home: 850 }, "Tizi Ouzou": { stopdesk: 350, home: 700 },
+    Alger: { stopdesk: 300, home: 450 }, Djelfa: { stopdesk: 550, home: 950 }, Jijel: { stopdesk: 400, home: 800 },
+    "Sétif": { stopdesk: 400, home: 750 }, "Saïda": { stopdesk: 400, home: 850 }, Skikda: { stopdesk: 400, home: 800 },
+    "Sidi Bel Abbès": { stopdesk: 400, home: 750 }, Annaba: { stopdesk: 400, home: 750 }, Guelma: { stopdesk: 400, home: 850 },
+    Constantine: { stopdesk: 400, home: 750 }, "Médéa": { stopdesk: 400, home: 700 }, Mostaganem: { stopdesk: 400, home: 750 },
+    "M'Sila": { stopdesk: 400, home: 800 }, Mascara: { stopdesk: 400, home: 750 }, Ouargla: { stopdesk: 550, home: 1050 },
+    Oran: { stopdesk: 400, home: 750 }, "El Bayadh": { stopdesk: 600, home: 1150 }, Illizi: { stopdesk: 1000, home: 1850 },
+    "Bordj Bou Arreridj": { stopdesk: 400, home: 750 }, "Boumerdès": { stopdesk: 300, home: 550 }, "El Tarf": { stopdesk: 400, home: 850 },
+    Tindouf: { stopdesk: 700, home: 1350 }, Tissemsilt: { stopdesk: 400, home: 800 }, "El Oued": { stopdesk: 550, home: 1100 },
+    Khenchela: { stopdesk: 400, home: 850 }, "Souk Ahras": { stopdesk: 400, home: 850 }, Tipaza: { stopdesk: 350, home: 550 },
+    Mila: { stopdesk: 400, home: 800 }, "Aïn Defla": { stopdesk: 400, home: 750 }, "Naâma": { stopdesk: 600, home: 1150 },
+    "Aïn Témouchent": { stopdesk: 400, home: 750 }, "Ghardaïa": { stopdesk: 550, home: 1000 }, Relizane: { stopdesk: 400, home: 800 },
+    "Ouled Djellal": { stopdesk: 550, home: 950 }, "El Menia": { stopdesk: 550, home: 1100 }, "El Meghaier": { stopdesk: 600, home: 1050 },
+    Touggourt: { stopdesk: 550, home: 1050 }, "Béni Abbès": { stopdesk: 750, home: 1150 }, Timimoun: { stopdesk: 700, home: 1450 },
     "In Salah": { stopdesk: 900, home: 1650 },
   };
   
@@ -342,12 +307,17 @@
 
         <div id="cod-urgency-msg" class="cod-urgency" style="display:none;"></div>
 
+        <!-- Honeypot — hidden from humans, bots fill it -->
+        <div style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+          <input type="text" name="website" id="cod-honeypot" tabindex="-1" autocomplete="off" />
+        </div>
+
         <button class="cod-submit-btn" id="cod-submit" type="button">
           <span class="cod-btn-text">Confirmer ma commande</span>
           <div class="cod-spinner"></div>
         </button>
 
-        <div class="cod-terms-text">En passant commande, vous acceptez nos conditions générales de vente et d'utilisation.</div>
+        <div class="cod-terms-text">En passant commande, vous acceptez nos conditions générales de vente.</div>
       </div>
 
       <div class="cod-footer">
@@ -393,6 +363,50 @@
   }
 
   /* ─────────────────────────────────────────────
+     MID-FUNNEL EVENT TRACKING
+     Lead            → form first interacted
+     InitiateCheckout → name + phone both valid
+  ───────────────────────────────────────────── */
+  var leadFired = false;
+  var initiateCheckoutFired = false;
+
+  function getProductData() {
+    return {
+      content_ids: [String(CONFIG.variantId || "")],
+      content_type: "product",
+      content_name: CONFIG.productTitle,
+      value: parseFloat((CONFIG.price / 260).toFixed(2)),
+      currency: "USD",
+      num_items: state.qty,
+    };
+  }
+
+  function fireLead() {
+    if (leadFired) return;
+    if (typeof fbq !== "function") return;
+    leadFired = true;
+    fbq("track", "Lead", getProductData());
+    console.log("[COD Pixel] Lead fired ✅");
+  }
+
+  function fireInitiateCheckout() {
+    if (initiateCheckoutFired) return;
+    if (typeof fbq !== "function") return;
+    
+    // Only fire when both name AND phone have real, valid values
+    var name = document.getElementById("cod-name");
+    var phone = document.getElementById("cod-phone");
+    var nameOk = name && name.value.trim().length >= 3;
+    var phoneOk = phone && /^0[5-7]\d{8}$/.test(phone.value.replace(/\s/g, ""));
+    
+    if (!nameOk || !phoneOk) return;
+    
+    initiateCheckoutFired = true;
+    fbq("track", "InitiateCheckout", getProductData());
+    console.log("[COD Pixel] InitiateCheckout fired ✅");
+  }
+
+  /* ─────────────────────────────────────────────
      DATA CAPTURE FOR CAPI & OTHER PIXELS
   ───────────────────────────────────────────── */
   function getFBCookies() {
@@ -404,6 +418,8 @@
 
     const fbp = cookies["_fbp"] || null;
     let fbc = null;
+    
+    // Priority 1: fbclid directly in the current URL
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const fbclid = urlParams.get("fbclid");
@@ -412,7 +428,9 @@
       }
     } catch(e) {}
 
+    // Priority 2: existing _fbc cookie
     if (!fbc) fbc = cookies["_fbc"] || null;
+    
     return { fbp, fbc };
   }
 
@@ -421,7 +439,7 @@
   }
 
   /* ─────────────────────────────────────────────
-     CONVERSION EVENTS (Fired on Submit)
+     PURCHASE CONVERSION EVENTS (Fired on Submit)
   ───────────────────────────────────────────── */
   function fireConversionEvents(orderId, total, variantId, eventId, email, phone) {
     const valueUSD  = parseFloat((total / 260).toFixed(2));
@@ -443,6 +461,7 @@
           num_items: state.qty,
           order_id: orderId,
         }, { eventID: eventId });
+        console.log("[COD Pixel] Purchase fired ✅ ($" + valueUSD + ")");
       }
     } catch(e) { }
 
@@ -637,10 +656,10 @@
         updateQtyBtns(); 
         
         if (inventory === 1 && urgencyEl) {
-          urgencyEl.textContent = "🔥 DERNIÈRE CHANCE : Seulement 1 article en stock !";
+          urgencyEl.textContent = "🔥 Plus qu'1 seul article disponible !";
           urgencyEl.style.display = "block";
         } else if (inventory === 2 && urgencyEl) {
-          urgencyEl.textContent = "🔥 DERNIÈRE CHANCE : Seulement 2 articles en stock !";
+          urgencyEl.textContent = "🔥 Plus que 2 articles disponibles !";
           urgencyEl.style.display = "block";
         }
       }
@@ -733,6 +752,8 @@
       currency: CONFIG.currency,
       event_id: eventId,
       fbp, fbc,
+      website: document.getElementById("cod-honeypot")?.value || "",
+      client_user_agent: navigator.userAgent || "",
     };
     
     try {
@@ -800,6 +821,27 @@
       const el=document.getElementById(id);
       if(el) el.addEventListener("input",()=>{ el.classList.remove("cod-error"); const e=document.getElementById(id+"-err"); if(e) e.classList.remove("visible"); });
     });
+
+    // --- Mid-Funnel Pixel Listeners ---
+    
+    // Fire "Lead" on first interaction with any field
+    ["cod-name","cod-phone","cod-wilaya","cod-commune","cod-address","cod-email"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener("focus", fireLead, { once: true });
+    });
+
+    // Fire "InitiateCheckout" when both name and phone are filled properly
+    var nameEl  = document.getElementById("cod-name");
+    var phoneEl = document.getElementById("cod-phone");
+    
+    if (nameEl) {
+      nameEl.addEventListener("input", fireInitiateCheckout);
+      nameEl.addEventListener("blur", fireInitiateCheckout);
+    }
+    if (phoneEl) {
+      phoneEl.addEventListener("input", fireInitiateCheckout);
+      phoneEl.addEventListener("blur", fireInitiateCheckout);
+    }
   }
 
   function updateQtyBtns() {
