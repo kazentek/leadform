@@ -1,6 +1,6 @@
 /**
  * GET /api/pixel.js
- * Human-verified ViewContent + Standard PageView + CAPI syncing.
+ * Human-verified ViewContent + CAPI syncing helper.
  */
 module.exports = function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -15,7 +15,7 @@ module.exports = function handler(req, res) {
   var PIXEL_ID = "${PIXEL_ID}";
   window.__FB_PIXEL_ID__ = PIXEL_ID;
 
-  // 1. Universal CAPI Sender
+  // Universal CAPI Sender for Mid-Funnel events
   function getFBCookies() {
     var cookies = document.cookie.split(";").reduce(function(acc, c) {
       var idx = c.indexOf("=");
@@ -48,14 +48,7 @@ module.exports = function handler(req, res) {
     }).catch(function(){});
   };
 
-  // 2. Fire STANDARD PageView immediately (Fixes 0 Landing Page Views)
-  var pvEventId = "pv_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-  if (window.fbq) {
-    fbq("track", "PageView", {}, { eventID: pvEventId });
-  }
-  window.__sendServerEvent("PageView", pvEventId, {});
-
-  // 3. Human Verification for ViewContent
+  // Human Verification for ViewContent
   var humanVerified = false;
   var startX = null, startY = null;
 
