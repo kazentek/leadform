@@ -853,6 +853,11 @@
   /* ─────────────────────────────────────────────
      4. STICKY ACTION BUTTON LOGIC
   ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+     4. STICKY ACTION BUTTON LOGIC (Updated with AddToCart)
+  ───────────────────────────────────────────── */
+  var atcFired = false; // Prevents firing the pixel multiple times
+
   function initStickyBar() {
     const stickyBar = document.createElement("div");
     stickyBar.id = "cod-sticky-bar";
@@ -867,11 +872,18 @@
 
     const triggerBtn = stickyBar.querySelector(".cod-sticky-trigger");
     triggerBtn.addEventListener("click", () => {
+      
+      // 1. Fire the AddToCart Pixel Event
+      if (!atcFired && typeof fbq === "function") {
+        atcFired = true;
+        fbq("track", "AddToCart", getProductData());
+        console.log("[COD Pixel] AddToCart fired via Sticky Button ✅");
+      }
+
+      // 2. Execute the Scroll and Focus
       const root = document.getElementById("cod-form-root");
       if (root) {
-        // Scroll to form
         root.scrollIntoView({ behavior: "smooth", block: "start" });
-        // After scrolling, focus the first input field to pop open the keyboard
         setTimeout(() => {
           const nameInput = document.getElementById("cod-name");
           if (nameInput) nameInput.focus({ preventScroll: true });
@@ -883,22 +895,19 @@
     const rootEl = document.getElementById("cod-form-root");
     if (rootEl && "IntersectionObserver" in window) {
       const observer = new IntersectionObserver((entries) => {
-        if (state.submitted) return; // Do nothing if order is already placed
+        if (state.submitted) return; 
         entries.forEach(entry => {
-          // If the form is highly visible (user is looking at it), hide the sticky bar
           if (entry.isIntersecting) {
             stickyBar.classList.remove("visible");
           } else {
-            // If the user scrolls past or away from the form, show the sticky bar
             stickyBar.classList.add("visible");
           }
         });
       }, {
-        threshold: 0.1 // Triggers when 10% of the form is visible
+        threshold: 0.1 
       });
       observer.observe(rootEl);
     } else {
-      // Fallback for very old browsers: just show it after 2 seconds
       setTimeout(() => { if (!state.submitted) stickyBar.classList.add("visible"); }, 2000);
     }
   }
