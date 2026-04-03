@@ -363,10 +363,8 @@
     `;
   }
 
-  /* ─────────────────────────────────────────────
-     MID-FUNNEL EVENT TRACKING
-     Lead            → form first interacted
-     InitiateCheckout → name + phone both valid
+/* ─────────────────────────────────────────────
+     MID-FUNNEL EVENT TRACKING (Pixel + CAPI)
   ───────────────────────────────────────────── */
   var leadFired = false;
   var initiateCheckoutFired = false;
@@ -382,27 +380,72 @@
     };
   }
 
+  // Wrapper to send CAPI from frontend
+  function sendCAPIEvent(eventName, eventId, customData, userData = {}) {
+    const { fbp, fbc } = getFBCookies();
+    fetch(`${CONFIG.apiBase}/api/capi`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event_name: eventName,
+        event_id: eventId,
+        event_source_url: window.location.href,
+        fbp: fbp,
+        fbc: fbc,
+        custom_data: customData,
+        user_data: userData
+      })
+    }).catch(e => console.error(`[CAPI] Frontend Error for ${eventName}`, e));
+  }
+
   function fireLead() {
     if (leadFired) return;
     if (typeof fbq !== "function") return;
     leadFired = true;
+    
     var eid = getSessionEventId("Lead");
-    fbq("track", "Lead", getProductData(), { eventID: eid });
-    console.log("[COD Pixel] Lead fired ✅ | eventID:", eid);
+    var productData = getProductData();
+    
+    // 1. Send Browser Event
+    fbq("track", "Lead", productData, { eventID: eid });
+    
+    // 2. Send Server Event
+    sendCAPIEvent("Lead", eid, productData);
+    
+    console.log("[COD Pixel] Lead fired Browser + CAPI ✅ | eventID:", eid);
   }
 
   function fireInitiateCheckout() {
     if (initiateCheckoutFired) return;
     if (typeof fbq !== "function") return;
-    var name = document.getElementById("cod-name");
-    var phone = document.getElementById("cod-phone");
-    var nameOk = name && name.value.trim().length >= 3;
-    var phoneOk = phone && /^0[5-7]\d{8}$/.test(phone.value.replace(/\s/g, ""));
+    
+    var nameEl = document.getElementById("cod-name");
+    var phoneEl = document.getElementById("cod-phone");
+    var emailEl = document.getElementById("cod-email");
+    
+    var nameOk = nameEl && nameEl.value.trim().length >= 3;
+    var phoneOk = phoneEl && /^0[5-7]\d{8}$/.test(phoneEl.value.replace(/\s/g, ""));
+    
     if (!nameOk || !phoneOk) return;
     initiateCheckoutFired = true;
+    
     var eid = getSessionEventId("InitiateCheckout");
-    fbq("track", "InitiateCheckout", getProductData(), { eventID: eid });
-    console.log("[COD Pixel] InitiateCheckout fired ✅ | eventID:", eid);
+    var productData = getProductData();
+    
+    // Capture user data for massive EMQ improvement
+    var userData = {
+        name: nameEl.value.trim(),
+        phone: phoneEl.value.replace(/\s/g, ""),
+        email: emailEl ? emailEl.value.trim() : null
+    };
+
+    // 1. Send Browser Event
+    fbq("track", "InitiateCheckout", productData, { eventID: eid });
+    
+    // 2. Send Server Event
+    sendCAPIEvent("InitiateCheckout", eid, productData, userData);
+    
+    console.log("[COD Pixel] InitiateCheckout fired Browser + CAPI ✅ | eventID:", eid);
   }
 
   /* ─────────────────────────────────────────────
@@ -883,13 +926,17 @@
     const triggerBtn = stickyBar.querySelector(".cod-sticky-trigger");
     triggerBtn.addEventListener("click", () => {
       
-      // 1. Fire the AddToCart Pixel Event
+// 1. Fire the AddToCart Pixel & Server Event
       if (!atcFired && typeof fbq === "function") {
         atcFired = true;
-        fbq("track", "AddToCart", getProductData());
-        console.log("[COD Pixel] AddToCart fired via Sticky Button ✅");
+        var eid = getSessionEventId("AddToCart");
+        var productData = getProductData();
+        
+        fbq("track", "AddToCart", productData, { eventID: eid });
+        sendCAPIEvent("AddToCart", eid, productData);
+        
+        console.log("[COD Pixel] AddToCart fired Browser + CAPI ✅");
       }
-
       // 2. Execute the Scroll and Focus
       const root = document.getElementById("cod-form-root");
       if (root) {
