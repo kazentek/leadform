@@ -381,15 +381,24 @@
   }
 
   // Wrapper to send CAPI from frontend
+// Wrapper to send CAPI from frontend
   function sendCAPIEvent(eventName, eventId, customData, userData = {}) {
     const { fbp, fbc } = getFBCookies();
+    
+    // Better URL capture: Force it to use the true product URL if available
+    let currentUrl = window.location.href;
+    const canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical && canonical.href) {
+      currentUrl = canonical.href;
+    }
+
     fetch(`${CONFIG.apiBase}/api/capi`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         event_name: eventName,
         event_id: eventId,
-        event_source_url: window.location.href,
+        event_source_url: currentUrl, // Uses the fixed URL
         fbp: fbp,
         fbc: fbc,
         custom_data: customData,
