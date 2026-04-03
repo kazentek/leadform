@@ -94,7 +94,8 @@ event_name: "Purchase",
 event_time: Math.floor(Date.now() / 1000),
 event_id: eventId,
 action_source: "website",
-event_source_url: `https://${process.env.SHOP_DOMAIN}/products`,
+// Use actual product URL passed from browser, fall back to domain
+      event_source_url: payload.event_source_url || `https://${process.env.SHOP_DOMAIN}/products`,
 user_data: userData,
 custom_data: {
 value: valueUSD,
@@ -178,7 +179,7 @@ const {
 variant_id, quantity, customer_name, phone, email, // Added email here
 wilaya, commune, address, delivery_type,
 shipping_cost, product_price, currency = "DZD",
-event_id, fbp, fbc,
+event_id, fbp, fbc, event_source_url,
 } = body;
 
 if (!variant_id || !quantity || !customer_name || !phone || !wilaya || !commune) {
