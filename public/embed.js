@@ -50,8 +50,9 @@
       }(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
       
       fbq("init", pixelId);
-      fbq("track", "PageView");
-      console.log("[COD Pixel] ⚡ Facebook Pixel loaded instantly:", pixelId);
+      // PageView is fired by theme.liquid inline — NOT here
+      // embed.js only handles mid-funnel + Purchase events
+      console.log("[COD Pixel] ⚡ Pixel init confirmed:", pixelId);
     }
   }
 
@@ -385,25 +386,23 @@
     if (leadFired) return;
     if (typeof fbq !== "function") return;
     leadFired = true;
-    fbq("track", "Lead", getProductData());
-    console.log("[COD Pixel] Lead fired ✅");
+    var eid = getSessionEventId("Lead");
+    fbq("track", "Lead", getProductData(), { eventID: eid });
+    console.log("[COD Pixel] Lead fired ✅ | eventID:", eid);
   }
 
   function fireInitiateCheckout() {
     if (initiateCheckoutFired) return;
     if (typeof fbq !== "function") return;
-    
-    // Only fire when both name AND phone have real, valid values
     var name = document.getElementById("cod-name");
     var phone = document.getElementById("cod-phone");
     var nameOk = name && name.value.trim().length >= 3;
     var phoneOk = phone && /^0[5-7]\d{8}$/.test(phone.value.replace(/\s/g, ""));
-    
     if (!nameOk || !phoneOk) return;
-    
     initiateCheckoutFired = true;
-    fbq("track", "InitiateCheckout", getProductData());
-    console.log("[COD Pixel] InitiateCheckout fired ✅");
+    var eid = getSessionEventId("InitiateCheckout");
+    fbq("track", "InitiateCheckout", getProductData(), { eventID: eid });
+    console.log("[COD Pixel] InitiateCheckout fired ✅ | eventID:", eid);
   }
 
   /* ─────────────────────────────────────────────
@@ -436,6 +435,16 @@
 
   function generateEventId() {
     return "cod_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+  }
+
+  // Session-scoped IDs for mid-funnel events (generated once per page load)
+  // These are stable within a session so Meta can deduplicate if CAPI is added later
+  var _sessionIds = {};
+  function getSessionEventId(eventName) {
+    if (!_sessionIds[eventName]) {
+      _sessionIds[eventName] = eventName.toLowerCase() + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+    }
+    return _sessionIds[eventName];
   }
 
   /* ─────────────────────────────────────────────
@@ -752,6 +761,7 @@
       currency: CONFIG.currency,
       event_id: eventId,
       fbp, fbc,
+      event_source_url: window.location.href, // Actual page URL for CAPI attribution
       website: document.getElementById("cod-honeypot")?.value || "",
       client_user_agent: navigator.userAgent || "",
     };
