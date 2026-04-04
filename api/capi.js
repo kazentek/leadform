@@ -32,39 +32,22 @@ module.exports = async function handler(req, res) {
   const clientIp = forwardedIps ? forwardedIps.split(",")[0].trim() : (req.socket?.remoteAddress || "");
   const userAgent = req.headers["user-agent"] || "";
 
-  // Securely hash user data per Meta's Best Practices
+  // Securely hash user data if provided (e.g., from InitiateCheckout)
   const userDataPayload = {
     client_ip_address: clientIp,
     client_user_agent: userAgent,
-    country: [h("dz")],
     ...(fbp ? { fbp } : {}),
     ...(fbc ? { fbc } : {}),
+    ...(user_data.phone ? { ph: [h(user_data.phone.replace(/\s/g, ""))] } : {}),
+    ...(user_data.email ? { em: [h(user_data.email.toLowerCase().trim())] } : {})
   };
 
-  if (user_data.phone) {
-    const cleanPhone = user_data.phone.replace(/\s/g, "");
-    userDataPayload.ph = [h(cleanPhone)];
-    userDataPayload.external_id = [h(cleanPhone)]; // Major EMQ boost
-  }
-  
-  if (user_data.email) {
-    userDataPayload.em = [h(user_data.email.toLowerCase().trim())];
-  }
-
-  // Explicit First / Last Name split
-  if (user_data.first_name) {
-    userDataPayload.fn = [h(user_data.first_name.toLowerCase().trim())];
-  }
-  if (user_data.last_name) {
-    userDataPayload.ln = [h(user_data.last_name.toLowerCase().trim())];
-  }
-
-  // Mid-funnel location mapping 
-  if (user_data.wilaya) {
-    userDataPayload.st = [h(user_data.wilaya.toLowerCase().replace(/\s/g, ""))];
-  }
-  if (user_data.commune) {
-    userDataPayload.ct = [h(user_data.commune.toLowerCase().replace(/\s/g, ""))];
+  if (user_data.name) {
+    const nameParts = user_data.name.trim().split(/\s+/);
+    userDataPayload.fn = [h((nameParts[0] || "").toLowerCase())];
+    if (nameParts.length > 1) {
+      userDataPayload.ln = [h(nameParts.slice(1).join(" ").toLowerCase())];
+    }
   }
 
   const eventData = {
