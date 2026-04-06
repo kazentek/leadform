@@ -32,23 +32,22 @@ module.exports = async function handler(req, res) {
   const clientIp = forwardedIps ? forwardedIps.split(",")[0].trim() : (req.socket?.remoteAddress || "");
   const userAgent = req.headers["user-agent"] || "";
 
-  // Securely hash user data if provided (e.g., from InitiateCheckout)
+  // 2026 Best Practice: Securely hash specific fields, pass others unhashed
   const userDataPayload = {
     client_ip_address: clientIp,
     client_user_agent: userAgent,
     ...(fbp ? { fbp } : {}),
     ...(fbc ? { fbc } : {}),
+    ...(user_data.external_id ? { external_id: [h(user_data.external_id)] } : {}),
     ...(user_data.phone ? { ph: [h(user_data.phone.replace(/\s/g, ""))] } : {}),
-    ...(user_data.email ? { em: [h(user_data.email.toLowerCase().trim())] } : {})
+    ...(user_data.email ? { em: [h(user_data.email.toLowerCase().trim())] } : {}),
+    country: [h("dz")],
   };
 
-  if (user_data.name) {
-    const nameParts = user_data.name.trim().split(/\s+/);
-    userDataPayload.fn = [h((nameParts[0] || "").toLowerCase())];
-    if (nameParts.length > 1) {
-      userDataPayload.ln = [h(nameParts.slice(1).join(" ").toLowerCase())];
-    }
-  }
+  if (user_data.first_name) userDataPayload.fn = [h(user_data.first_name.toLowerCase().trim())];
+  if (user_data.last_name) userDataPayload.ln = [h(user_data.last_name.toLowerCase().trim())];
+  if (user_data.city) userDataPayload.ct = [h(user_data.city.toLowerCase().trim())];
+  if (user_data.state) userDataPayload.st = [h(user_data.state.toLowerCase().trim())];
 
   const eventData = {
     data: [{
