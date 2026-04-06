@@ -337,14 +337,16 @@
     sendCAPIEvent("Lead", eid, pData);
   }
 
-  var initiateCheckoutFired = false;
+var initiateCheckoutFired = false;
   function fireInitiateCheckout() {
     if (initiateCheckoutFired || typeof fbq !== "function") return;
     var pEl = document.getElementById("cod-prenom");
     var nEl = document.getElementById("cod-nom");
+    
     if ((pEl && pEl.value.trim().length >= 2) || (nEl && nEl.value.trim().length >= 2)) {
       initiateCheckoutFired = true;
-      var eid = getSessionEventId("InitiateCheckout"); var pData = getProductData();
+      var eid = getSessionEventId("InitiateCheckout"); 
+      var pData = getProductData();
       
       var emailEl = document.getElementById("cod-email");
       var phoneEl = document.getElementById("cod-phone");
@@ -355,6 +357,14 @@
         email: emailEl ? emailEl.value.trim() : null
       };
 
+      // 2026 Update: Push user data to the Browser Pixel before tracking
+      let browserAdv = { external_id: getExternalId() };
+      if (userData.first_name) browserAdv.fn = userData.first_name.toLowerCase();
+      if (userData.last_name) browserAdv.ln = userData.last_name.toLowerCase();
+      if (userData.phone) browserAdv.ph = userData.phone;
+      if (userData.email) browserAdv.em = userData.email;
+      
+      fbq('init', window.__FB_PIXEL_ID__ || '1141342971356278', browserAdv);
       fbq("track", "InitiateCheckout", pData, { eventID: eid });
       sendCAPIEvent("InitiateCheckout", eid, pData, userData);
     }
@@ -365,8 +375,20 @@
     const contentId = String(variantId || CONFIG.variantId || "");
     try {
       if (typeof fbq === "function") {
-        let adv = {}; if(email) adv.em=email.toLowerCase(); if(phone) adv.ph=phone.replace(/\s/g,"");
-        fbq("track", "Purchase", { value: valueUSD, currency: "USD", content_ids: [contentId], content_type: "product", num_items: state.qty, order_id: orderId }, { eventID: eventId });
+        // 2026 Update: Push user data to the Browser Pixel for Purchase
+        let browserAdv = { external_id: getExternalId() };
+        if (email) browserAdv.em = email.toLowerCase().trim(); 
+        if (phone) browserAdv.ph = phone.replace(/\s/g,"");
+        const prenom = document.getElementById("cod-prenom")?.value.trim();
+        const nom = document.getElementById("cod-nom")?.value.trim();
+        if (prenom) browserAdv.fn = prenom.toLowerCase();
+        if (nom) browserAdv.ln = nom.toLowerCase();
+
+        fbq('init', window.__FB_PIXEL_ID__ || '1141342971356278', browserAdv);
+        fbq("track", "Purchase", { 
+          value: valueUSD, currency: "USD", content_ids: [contentId], 
+          content_type: "product", num_items: state.qty, order_id: orderId 
+        }, { eventID: eventId });
       }
     } catch(e) {}
   }
