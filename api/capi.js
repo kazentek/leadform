@@ -27,27 +27,43 @@ module.exports = async function handler(req, res) {
 
   const { event_name, event_id, event_source_url, fbp, fbc, custom_data, user_data = {} } = req.body;
 
-  // Extract IP and UA
+  // Extract IP and UA from incoming headers
   const forwardedIps = req.headers["x-forwarded-for"];
   const clientIp = forwardedIps ? forwardedIps.split(",")[0].trim() : (req.socket?.remoteAddress || "");
   const userAgent = req.headers["user-agent"] || "";
 
-  // Securely hash user data if provided (e.g., from InitiateCheckout)
   const userDataPayload = {
     client_ip_address: clientIp,
     client_user_agent: userAgent,
     ...(fbp ? { fbp } : {}),
     ...(fbc ? { fbc } : {}),
-    ...(user_data.phone ? { ph: [h(user_data.phone.replace(/\s/g, ""))] } : {}),
-    ...(user_data.email ? { em: [h(user_data.email.toLowerCase().trim())] } : {})
   };
 
-  if (user_data.name) {
+  // Phone — also derive external_id from it (FB recommends consistent external_id for better match)
+  if (user_data.phone) {
+    const cleanPhone = user_data.phone.replace(/\s/g, "");
+    userDataPayload.ph = [h(cleanPhone)];
+    userDataPayload.external_id = [h(cleanPhone)]; // phone hash as stable external_id
+  }
+
+  // Email
+  if (user_data.email) {
+    userDataPayload.em = [h(user_data.email.toLowerCase().trim())];
+  }
+
+  // First name and last name — support both direct fn/ln params AND name splitting
+  if (user_data.fn) {
+    userDataPayload.fn = [h(user_data.fn.toLowerCase().trim())];
+  } else if (user_data.name) {
     const nameParts = user_data.name.trim().split(/\s+/);
     userDataPayload.fn = [h((nameParts[0] || "").toLowerCase())];
     if (nameParts.length > 1) {
       userDataPayload.ln = [h(nameParts.slice(1).join(" ").toLowerCase())];
     }
+  }
+
+  if (user_data.ln && !userDataPayload.ln) {
+    userDataPayload.ln = [h(user_data.ln.toLowerCase().trim())];
   }
 
   const eventData = {
