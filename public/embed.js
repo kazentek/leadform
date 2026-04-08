@@ -1,7 +1,6 @@
 /**
  * COD Lead Form System — Algeria
- * Premium Redesign v5 (Sticky Button, Auto-Scroll, Urgency, Advanced FB Pixel Tracking)
- * ULTRA-FAST PIXEL LOAD EDITION
+ * Premium Redesign v6 (Bilingual FR/AR, Nom+Prénom split, Improved CAPI matching)
  */
 (function () {
   "use strict";
@@ -33,7 +32,6 @@
     const pixelId = window.__FB_PIXEL_ID__ || currentScript.dataset.fbPixelId;
     if (!pixelId) return;
 
-    // Performance Boost: Tell browser to connect to FB servers early
     try {
       const preconnect = document.createElement("link");
       preconnect.rel = "preconnect";
@@ -50,8 +48,6 @@
       }(window,document,"script","https://connect.facebook.net/en_US/fbevents.js");
       
       fbq("init", pixelId);
-      // PageView is fired by theme.liquid inline — NOT here
-      // embed.js only handles mid-funnel + Purchase events
       console.log("[COD Pixel] ⚡ Pixel init confirmed:", pixelId);
     }
   }
@@ -100,7 +96,7 @@
   function injectStyles() {
     const style = document.createElement("style");
     style.textContent = `
-      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
 
       #cod-form-root {
         all: initial; display: block; width: 100%; max-width: 520px; margin: 0 auto;
@@ -118,8 +114,20 @@
       .cod-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
       .cod-field-group { display: flex; flex-direction: column; gap: 8px; }
       .cod-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      .cod-label { font-size: 13px; font-weight: 700; color: #374151; }
+      
+      /* Bilingual label — FR left, AR right */
+      .cod-label {
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 13px; font-weight: 700; color: #374151;
+      }
+      .cod-label-ar {
+        font-family: 'Noto Sans Arabic', Arial, sans-serif;
+        font-size: 13px; font-weight: 600; color: #6B7280;
+        direction: rtl; letter-spacing: 0;
+      }
+      
       .cod-optional { font-size: 11px; font-weight: 500; color: #9CA3AF; margin-left: 4px; }
+      .cod-optional-ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; font-size: 11px; font-weight: 400; color: #9CA3AF; }
       .cod-input, .cod-select { width: 100%; height: 52px; padding: 0 16px; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 12px; font-size: 15px; font-family: inherit; font-weight: 500; color: #111827; outline: none; transition: all 0.2s ease; appearance: none; -webkit-appearance: none; }
       .cod-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; cursor: pointer; padding-right: 40px; }
       .cod-input:hover, .cod-select:hover { border-color: #D1D5DB; }
@@ -181,8 +189,17 @@
       /* Sticky Button Styles */
       .cod-sticky-wrapper { position: fixed; bottom: -100px; left: 0; width: 100%; padding: 12px 20px; background: #ffffff; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); z-index: 99999; display: flex; justify-content: center; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid #E5E7EB; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
       .cod-sticky-wrapper.visible { bottom: 0; }
-      .cod-sticky-trigger { width: 100%; max-width: 400px; height: 52px; background: #FF5A1F; color: #fff; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px -4px rgba(255,90,31,0.4); cursor: pointer; transition: transform 0.2s ease; font-family: inherit; }
+      .cod-sticky-trigger {
+        width: 100%; max-width: 400px; min-height: 60px;
+        background: #FF5A1F; color: #fff; border: none; border-radius: 14px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 2px; box-shadow: 0 4px 15px -4px rgba(255,90,31,0.4);
+        cursor: pointer; transition: transform 0.2s ease; font-family: inherit;
+        padding: 10px 20px;
+      }
       .cod-sticky-trigger:active { transform: scale(0.98); }
+      .cod-sticky-fr { font-size: 16px; font-weight: 800; line-height: 1.2; }
+      .cod-sticky-ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; opacity: 0.92; direction: rtl; }
       
       @media (max-width: 480px) {
         #cod-form-root { border-radius: 16px; border-left: none; border-right: none; border-top: 1px solid #E5E7EB; }
@@ -217,43 +234,75 @@
       <div class="cod-body" id="cod-body">
 
         <div class="cod-field-group" id="cod-variant-group" style="display:none;">
-          <label class="cod-label">Option / Variante *</label>
+          <label class="cod-label">
+            <span>Option / Variante *</span>
+            <span class="cod-label-ar">الخيار / الإصدار</span>
+          </label>
           <select id="cod-variant-select" class="cod-select"></select>
         </div>
 
-        <div class="cod-field-group">
-          <label class="cod-label">Nom et Prénom *</label>
-          <input id="cod-name" class="cod-input" type="text" placeholder="Ex: Ahmed Benali" autocomplete="name" />
-          <span class="cod-error-msg" id="cod-name-err">Veuillez entrer votre nom complet</span>
+        <!-- Prénom + Nom side by side, both required -->
+        <div class="cod-row">
+          <div class="cod-field-group">
+            <label class="cod-label">
+              <span>Prénom *</span>
+              <span class="cod-label-ar">الاسم</span>
+            </label>
+            <input id="cod-firstname" class="cod-input" type="text" placeholder="Ex: Ahmed" autocomplete="given-name" />
+            <span class="cod-error-msg" id="cod-firstname-err">Entrez votre prénom</span>
+          </div>
+          <div class="cod-field-group">
+            <label class="cod-label">
+              <span>Nom *</span>
+              <span class="cod-label-ar">اللقب</span>
+            </label>
+            <input id="cod-lastname" class="cod-input" type="text" placeholder="Ex: Benali" autocomplete="family-name" />
+            <span class="cod-error-msg" id="cod-lastname-err">Entrez votre nom</span>
+          </div>
         </div>
 
         <div class="cod-field-group">
-          <label class="cod-label">Numéro de Téléphone *</label>
+          <label class="cod-label">
+            <span>Numéro de Téléphone *</span>
+            <span class="cod-label-ar">رقم الهاتف</span>
+          </label>
           <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="14" dir="ltr" />
           <span class="cod-error-msg" id="cod-phone-err">Numéro invalide (ex: 0551 23 45 67)</span>
         </div>
 
         <div class="cod-field-group">
-          <label class="cod-label">Email <span class="cod-optional">(Facultatif)</span></label>
+          <label class="cod-label">
+            <span>Email <span class="cod-optional">(Facultatif)</span></span>
+            <span class="cod-label-ar">البريد الإلكتروني <span class="cod-optional-ar">(اختياري)</span></span>
+          </label>
           <input id="cod-email" class="cod-input" type="email" placeholder="exemple@email.com" autocomplete="email" dir="ltr" />
           <span class="cod-error-msg" id="cod-email-err">Veuillez entrer une adresse email valide</span>
         </div>
 
         <div class="cod-row">
           <div class="cod-field-group">
-            <label class="cod-label">Wilaya *</label>
+            <label class="cod-label">
+              <span>Wilaya *</span>
+              <span class="cod-label-ar">الولاية</span>
+            </label>
             <select id="cod-wilaya" class="cod-select"></select>
             <span class="cod-error-msg" id="cod-wilaya-err">Sélectionnez une wilaya</span>
           </div>
           <div class="cod-field-group">
-            <label class="cod-label">Commune *</label>
+            <label class="cod-label">
+              <span>Commune *</span>
+              <span class="cod-label-ar">البلدية</span>
+            </label>
             <select id="cod-commune" class="cod-select"><option value="">Sélectionner</option></select>
             <span class="cod-error-msg" id="cod-commune-err">Sélectionnez une commune</span>
           </div>
         </div>
 
         <div class="cod-field-group">
-          <label class="cod-label">Mode de Livraison *</label>
+          <label class="cod-label">
+            <span>Mode de Livraison *</span>
+            <span class="cod-label-ar">طريقة التوصيل</span>
+          </label>
           <div class="cod-delivery-grid">
             <label class="cod-delivery-option">
               <input type="radio" name="cod-delivery" value="home" checked />
@@ -279,13 +328,16 @@
         </div>
 
         <div class="cod-field-group">
-          <label class="cod-label">Adresse détaillée <span class="cod-optional">(Facultatif)</span></label>
+          <label class="cod-label">
+            <span>Adresse détaillée <span class="cod-optional">(Facultatif)</span></span>
+            <span class="cod-label-ar">العنوان التفصيلي <span class="cod-optional-ar">(اختياري)</span></span>
+          </label>
           <input id="cod-address" class="cod-input" type="text" placeholder="Nom de la rue, numéro de bâtiment..." />
         </div>
 
         <div class="cod-summary-section">
           <div class="cod-qty-row">
-            <span class="cod-qty-label">Quantité</span>
+            <span class="cod-qty-label">Quantité / الكمية</span>
             <div class="cod-qty-wrapper">
               <button class="cod-qty-btn" id="cod-qty-minus" type="button">−</button>
               <input class="cod-qty-input" id="cod-qty" type="text" value="1" readonly />
@@ -363,7 +415,7 @@
     `;
   }
 
-/* ─────────────────────────────────────────────
+  /* ─────────────────────────────────────────────
      MID-FUNNEL EVENT TRACKING (Pixel + CAPI)
   ───────────────────────────────────────────── */
   var leadFired = false;
@@ -380,12 +432,9 @@
     };
   }
 
-  // Wrapper to send CAPI from frontend
-// Wrapper to send CAPI from frontend
-  function sendCAPIEvent(eventName, eventId, customData, userData = {}) {
+  function sendCAPIEvent(eventName, eventId, customData, userData) {
     const { fbp, fbc } = getFBCookies();
     
-    // Better URL capture: Force it to use the true product URL if available
     let currentUrl = window.location.href;
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical && canonical.href) {
@@ -398,11 +447,11 @@
       body: JSON.stringify({
         event_name: eventName,
         event_id: eventId,
-        event_source_url: currentUrl, // Uses the fixed URL
+        event_source_url: currentUrl,
         fbp: fbp,
         fbc: fbc,
         custom_data: customData,
-        user_data: userData
+        user_data: userData || {}
       })
     }).catch(e => console.error(`[CAPI] Frontend Error for ${eventName}`, e));
   }
@@ -415,10 +464,7 @@
     var eid = getSessionEventId("Lead");
     var productData = getProductData();
     
-    // 1. Send Browser Event
     fbq("track", "Lead", productData, { eventID: eid });
-    
-    // 2. Send Server Event
     sendCAPIEvent("Lead", eid, productData);
     
     console.log("[COD Pixel] Lead fired Browser + CAPI ✅ | eventID:", eid);
@@ -428,30 +474,35 @@
     if (initiateCheckoutFired) return;
     if (typeof fbq !== "function") return;
     
-    var nameEl = document.getElementById("cod-name");
-    var phoneEl = document.getElementById("cod-phone");
-    var emailEl = document.getElementById("cod-email");
+    var firstnameEl = document.getElementById("cod-firstname");
     
-    var nameOk = nameEl && nameEl.value.trim().length >= 3;
-    var phoneOk = phoneEl && /^0[5-7]\d{8}$/.test(phoneEl.value.replace(/\s/g, ""));
+    // Trigger as soon as first name has at least 2 chars — don't wait for phone
+    var firstnameOk = firstnameEl && firstnameEl.value.trim().length >= 2;
+    if (!firstnameOk) return;
     
-    if (!nameOk || !phoneOk) return;
     initiateCheckoutFired = true;
     
     var eid = getSessionEventId("InitiateCheckout");
     var productData = getProductData();
     
-    // Capture user data for massive EMQ improvement
-    var userData = {
-        name: nameEl.value.trim(),
-        phone: phoneEl.value.replace(/\s/g, ""),
-        email: emailEl ? emailEl.value.trim() : null
-    };
-
-    // 1. Send Browser Event
-    fbq("track", "InitiateCheckout", productData, { eventID: eid });
+    // Collect whatever user data is available at this point
+    var lastnameEl = document.getElementById("cod-lastname");
+    var phoneEl    = document.getElementById("cod-phone");
+    var emailEl    = document.getElementById("cod-email");
     
-    // 2. Send Server Event
+    var userData = {};
+    var fn = firstnameEl.value.trim();
+    var ln = lastnameEl ? lastnameEl.value.trim() : "";
+    if (fn) userData.fn = fn;
+    if (ln) userData.ln = ln;
+    
+    var rawPhone = phoneEl ? phoneEl.value.replace(/\s/g, "") : "";
+    if (rawPhone && /^0[5-7]\d{8}$/.test(rawPhone)) userData.phone = rawPhone;
+    
+    var email = emailEl ? emailEl.value.trim() : "";
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) userData.email = email;
+
+    fbq("track", "InitiateCheckout", productData, { eventID: eid });
     sendCAPIEvent("InitiateCheckout", eid, productData, userData);
     
     console.log("[COD Pixel] InitiateCheckout fired Browser + CAPI ✅ | eventID:", eid);
@@ -470,7 +521,6 @@
     const fbp = cookies["_fbp"] || null;
     let fbc = null;
     
-    // Priority 1: fbclid directly in the current URL
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const fbclid = urlParams.get("fbclid");
@@ -479,7 +529,6 @@
       }
     } catch(e) {}
 
-    // Priority 2: existing _fbc cookie
     if (!fbc) fbc = cookies["_fbc"] || null;
     
     return { fbp, fbc };
@@ -489,8 +538,6 @@
     return "cod_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
   }
 
-  // Session-scoped IDs for mid-funnel events (generated once per page load)
-  // These are stable within a session so Meta can deduplicate if CAPI is added later
   var _sessionIds = {};
   function getSessionEventId(eventName) {
     if (!_sessionIds[eventName]) {
@@ -545,13 +592,10 @@
     try {
       if (typeof ttq !== "undefined" && typeof ttq.track === "function") {
         ttq.track("PlaceAnOrder", {
-          value: valueUSD,
-          currency: "USD",
-          content_id: contentId,
-          content_type: "product",
+          value: valueUSD, currency: "USD",
+          content_id: contentId, content_type: "product",
           content_name: CONFIG.productTitle,
-          quantity: state.qty,
-          order_id: orderId,
+          quantity: state.qty, order_id: orderId,
         });
       }
     } catch(e) { }
@@ -559,10 +603,8 @@
     try {
       if (typeof snaptr === "function") {
         snaptr("track", "PURCHASE", {
-          price: valueUSD,
-          currency: "USD",
-          transaction_id: orderId,
-          item_ids: [contentId],
+          price: valueUSD, currency: "USD",
+          transaction_id: orderId, item_ids: [contentId],
           number_items: state.qty,
         });
       }
@@ -571,9 +613,7 @@
     try {
       if (window.Shopify && window.Shopify.analytics && typeof window.Shopify.analytics.publish === "function") {
         window.Shopify.analytics.publish("checkout_completed", {
-          order_id: orderId,
-          total_price: valueDZD,
-          currency: "DZD",
+          order_id: orderId, total_price: valueDZD, currency: "DZD",
         });
       }
     } catch(e) { }
@@ -584,12 +624,9 @@
         window.dataLayer.push({
           event: "purchase",
           ecommerce: {
-            transaction_id: orderId,
-            value: valueUSD,
-            currency: "USD",
+            transaction_id: orderId, value: valueUSD, currency: "USD",
             items: [{
-              item_id: contentId,
-              item_name: CONFIG.productTitle,
+              item_id: contentId, item_name: CONFIG.productTitle,
               price: parseFloat((CONFIG.price / 260).toFixed(2)),
               quantity: state.qty,
             }],
@@ -744,33 +781,44 @@
 
   function validate() {
     let valid = true;
-    const name = document.getElementById("cod-name");
-    const phone = document.getElementById("cod-phone");
-    const email = document.getElementById("cod-email");
-    const wilaya = document.getElementById("cod-wilaya");
-    const commune = document.getElementById("cod-commune");
+    const firstname = document.getElementById("cod-firstname");
+    const lastname  = document.getElementById("cod-lastname");
+    const phone     = document.getElementById("cod-phone");
+    const email     = document.getElementById("cod-email");
+    const wilaya    = document.getElementById("cod-wilaya");
+    const commune   = document.getElementById("cod-commune");
     
     if (SHOPIFY_VARIANTS.length > 0) {
       const v = SHOPIFY_VARIANTS.find(v => v.id === CONFIG.variantId);
       if (v && !v.available) return false;
     }
 
-    if (!name?.value.trim()||name.value.trim().length<3) { setError("cod-name","cod-name-err",true); valid=false; } else setError("cod-name","cod-name-err",false);
+    if (!firstname?.value.trim() || firstname.value.trim().length < 2) {
+      setError("cod-firstname", "cod-firstname-err", true); valid = false;
+    } else { setError("cod-firstname", "cod-firstname-err", false); }
+
+    if (!lastname?.value.trim() || lastname.value.trim().length < 2) {
+      setError("cod-lastname", "cod-lastname-err", true); valid = false;
+    } else { setError("cod-lastname", "cod-lastname-err", false); }
     
     const rp = phone?.value.replace(/\s/g,"");
-    if (!rp||!/^0[5-7]\d{8}$/.test(rp)) { setError("cod-phone","cod-phone-err",true); valid=false; } else setError("cod-phone","cod-phone-err",false);
+    if (!rp || !/^0[5-7]\d{8}$/.test(rp)) {
+      setError("cod-phone", "cod-phone-err", true); valid = false;
+    } else { setError("cod-phone", "cod-phone-err", false); }
 
     const em = email?.value.trim();
     if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-      setError("cod-email", "cod-email-err", true); valid=false;
-    } else {
-      setError("cod-email", "cod-email-err", false);
-    }
+      setError("cod-email", "cod-email-err", true); valid = false;
+    } else { setError("cod-email", "cod-email-err", false); }
 
-    if (!wilaya?.value) { setError("cod-wilaya","cod-wilaya-err",true); valid=false; } else setError("cod-wilaya","cod-wilaya-err",false);
-    if (!commune?.value) { setError("cod-commune","cod-commune-err",true); valid=false; } else setError("cod-commune","cod-commune-err",false);
+    if (!wilaya?.value) {
+      setError("cod-wilaya", "cod-wilaya-err", true); valid = false;
+    } else { setError("cod-wilaya", "cod-wilaya-err", false); }
+
+    if (!commune?.value) {
+      setError("cod-commune", "cod-commune-err", true); valid = false;
+    } else { setError("cod-commune", "cod-commune-err", false); }
     
-    // Smooth scroll to the first error input and focus it
     if (!valid) {
       const firstError = document.querySelector('#cod-form-root .cod-error');
       if (firstError) {
@@ -795,25 +843,32 @@
     const btn = document.getElementById("cod-submit");
     if(btn) { btn.classList.add("loading"); btn.disabled=true; }
     
-    const phone = document.getElementById("cod-phone")?.value.replace(/\s/g,"");
-    const email = document.getElementById("cod-email")?.value.trim().toLowerCase() || null;
-    const address = document.getElementById("cod-address")?.value.trim();
-    const communeVal = document.getElementById("cod-commune")?.value;
-    const eventId = generateEventId();
+    const firstnameVal = document.getElementById("cod-firstname")?.value.trim() || "";
+    const lastnameVal  = document.getElementById("cod-lastname")?.value.trim() || "";
+    const phone        = document.getElementById("cod-phone")?.value.replace(/\s/g,"");
+    const email        = document.getElementById("cod-email")?.value.trim().toLowerCase() || null;
+    const address      = document.getElementById("cod-address")?.value.trim();
+    const communeVal   = document.getElementById("cod-commune")?.value;
+    const eventId      = generateEventId();
     const { fbp, fbc } = getFBCookies();
 
     const payload = {
-      variant_id: CONFIG.variantId, quantity: state.qty,
-      customer_name: document.getElementById("cod-name")?.value.trim(),
-      phone, email, wilaya: state.wilaya, commune: communeVal,
+      variant_id:    CONFIG.variantId,
+      quantity:      state.qty,
+      first_name:    firstnameVal,
+      last_name:     lastnameVal,
+      customer_name: `${firstnameVal} ${lastnameVal}`,
+      phone, email,
+      wilaya: state.wilaya, commune: communeVal,
       address: address || `${communeVal}, ${state.wilaya}`,
-      delivery_type: state.deliveryType, shipping_cost: state.shippingCost,
+      delivery_type: state.deliveryType,
+      shipping_cost: state.shippingCost,
       product_price: CONFIG.price,
       total: (CONFIG.price * state.qty) + state.shippingCost,
       currency: CONFIG.currency,
       event_id: eventId,
       fbp, fbc,
-      event_source_url: window.location.href, // Actual page URL for CAPI attribution
+      event_source_url: window.location.href,
       website: document.getElementById("cod-honeypot")?.value || "",
       client_user_agent: navigator.userAgent || "",
     };
@@ -826,7 +881,7 @@
       if (!resp.ok) throw new Error(data.error||"Order failed");
       state.submitted = true;
       showSuccess(data.order_id||data.order?.name||"#COD-"+Date.now().toString().slice(-6), payload);
-      hideStickyBarForever(); // Hide the floating button since they ordered
+      hideStickyBarForever();
     } catch(err) {
       if(btn) {
         btn.classList.remove("loading"); btn.disabled=false;
@@ -838,8 +893,8 @@
   }
 
   function showSuccess(orderId, payload) {
-    const body = document.getElementById("cod-body");
-    const footer = document.querySelector(".cod-footer");
+    const body    = document.getElementById("cod-body");
+    const footer  = document.querySelector(".cod-footer");
     const success = document.getElementById("cod-success");
     if(body) body.style.display="none";
     if(footer) footer.style.display="none";
@@ -853,10 +908,7 @@
 
     if(success) {
       success.classList.add("visible");
-      // Smooth scroll to the success message (receipt)
-      setTimeout(() => {
-        success.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 50);
+      setTimeout(() => { success.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
     }
 
     fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, payload.email, payload.phone);
@@ -879,29 +931,33 @@
     if(pi) pi.addEventListener("input",()=>formatPhone(pi));
     const btn=document.getElementById("cod-submit");
     if(btn) btn.addEventListener("click",handleSubmit);
-    ["cod-name","cod-phone","cod-wilaya","cod-commune","cod-email"].forEach(id=>{
+
+    // Clear errors on input for all fields
+    ["cod-firstname","cod-lastname","cod-phone","cod-wilaya","cod-commune","cod-email"].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.addEventListener("input",()=>{ el.classList.remove("cod-error"); const e=document.getElementById(id+"-err"); if(e) e.classList.remove("visible"); });
     });
 
-    // --- Mid-Funnel Pixel Listeners ---
-    
-    // Fire "Lead" on first interaction with any field
-    ["cod-name","cod-phone","cod-wilaya","cod-commune","cod-address","cod-email"].forEach(function(id) {
+    // Lead: fire on first focus of any field
+    ["cod-firstname","cod-lastname","cod-phone","cod-wilaya","cod-commune","cod-address","cod-email"].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener("focus", fireLead, { once: true });
     });
 
-    // Fire "InitiateCheckout" when both name and phone are filled properly
-    var nameEl  = document.getElementById("cod-name");
-    var phoneEl = document.getElementById("cod-phone");
+    // InitiateCheckout: fire as soon as first name has 2+ chars
+    var firstnameEl = document.getElementById("cod-firstname");
+    var lastnameEl  = document.getElementById("cod-lastname");
+    var phoneEl     = document.getElementById("cod-phone");
     
-    if (nameEl) {
-      nameEl.addEventListener("input", fireInitiateCheckout);
-      nameEl.addEventListener("blur", fireInitiateCheckout);
+    if (firstnameEl) {
+      firstnameEl.addEventListener("input", fireInitiateCheckout);
+      firstnameEl.addEventListener("blur", fireInitiateCheckout);
+    }
+    // Also attempt on lastname/phone fill in case user skips firstname tab (edge case)
+    if (lastnameEl) {
+      lastnameEl.addEventListener("blur", fireInitiateCheckout);
     }
     if (phoneEl) {
-      phoneEl.addEventListener("input", fireInitiateCheckout);
       phoneEl.addEventListener("blur", fireInitiateCheckout);
     }
   }
@@ -913,12 +969,9 @@
   }
 
   /* ─────────────────────────────────────────────
-     4. STICKY ACTION BUTTON LOGIC
+     4. STICKY ACTION BUTTON (Bilingual FR/AR)
   ───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
-     4. STICKY ACTION BUTTON LOGIC (Updated with AddToCart)
-  ───────────────────────────────────────────── */
-  var atcFired = false; // Prevents firing the pixel multiple times
+  var atcFired = false;
 
   function initStickyBar() {
     const stickyBar = document.createElement("div");
@@ -926,8 +979,10 @@
     stickyBar.className = "cod-sticky-wrapper";
     stickyBar.innerHTML = `
       <button class="cod-sticky-trigger" type="button">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-        Commander Maintenant
+        <span class="cod-sticky-fr">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>Commander Maintenant
+        </span>
+        <span class="cod-sticky-ar">اطلب الآن</span>
       </button>
     `;
     document.body.appendChild(stickyBar);
@@ -935,7 +990,7 @@
     const triggerBtn = stickyBar.querySelector(".cod-sticky-trigger");
     triggerBtn.addEventListener("click", () => {
       
-// 1. Fire the AddToCart Pixel & Server Event
+      // Fire AddToCart pixel + CAPI
       if (!atcFired && typeof fbq === "function") {
         atcFired = true;
         var eid = getSessionEventId("AddToCart");
@@ -946,18 +1001,19 @@
         
         console.log("[COD Pixel] AddToCart fired Browser + CAPI ✅");
       }
-      // 2. Execute the Scroll and Focus
+
+      // Scroll to form and focus first name
       const root = document.getElementById("cod-form-root");
       if (root) {
         root.scrollIntoView({ behavior: "smooth", block: "start" });
         setTimeout(() => {
-          const nameInput = document.getElementById("cod-name");
-          if (nameInput) nameInput.focus({ preventScroll: true });
+          const firstInput = document.getElementById("cod-firstname");
+          if (firstInput) firstInput.focus({ preventScroll: true });
         }, 600);
       }
     });
 
-    // Intersection Observer to show/hide the sticky bar dynamically
+    // IntersectionObserver: show sticky when form is out of view
     const rootEl = document.getElementById("cod-form-root");
     if (rootEl && "IntersectionObserver" in window) {
       const observer = new IntersectionObserver((entries) => {
@@ -969,9 +1025,7 @@
             stickyBar.classList.add("visible");
           }
         });
-      }, {
-        threshold: 0.1 
-      });
+      }, { threshold: 0.1 });
       observer.observe(rootEl);
     } else {
       setTimeout(() => { if (!state.submitted) stickyBar.classList.add("visible"); }, 2000);
@@ -984,7 +1038,7 @@
   }
 
   /* ─────────────────────────────────────────────
-     5. BUILD THE UI (Waits for DOM)
+     5. BUILD THE UI
   ───────────────────────────────────────────── */
   function init() {
     injectStyles();
@@ -1003,12 +1057,9 @@
     loadCommunes();
     fetchShopifyVariants().then(()=>{ fetchStock(); });
     bindEvents();
-
-    // Initialize the Smart Sticky Button
     initStickyBar();
   }
 
-  // Only the visual form waits for the DOM to load now!
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
   else init();
 })();
