@@ -475,29 +475,29 @@
     if (typeof fbq !== "function") return;
     
     var firstnameEl = document.getElementById("cod-firstname");
-    
-    // Trigger as soon as first name has at least 2 chars — don't wait for phone
+    var lastnameEl  = document.getElementById("cod-lastname");
+    var phoneEl     = document.getElementById("cod-phone");
+    var emailEl     = document.getElementById("cod-email");
+
+    // Require firstname (2+ chars) AND valid phone — keeps phone at ~100% coverage
+    // This mirrors the original trigger logic that gave 8.1/10
     var firstnameOk = firstnameEl && firstnameEl.value.trim().length >= 2;
-    if (!firstnameOk) return;
-    
+    var rawPhone    = phoneEl ? phoneEl.value.replace(/\s/g, "") : "";
+    var phoneOk     = /^0[5-7]\d{8}$/.test(rawPhone);
+
+    if (!firstnameOk || !phoneOk) return;
     initiateCheckoutFired = true;
     
     var eid = getSessionEventId("InitiateCheckout");
     var productData = getProductData();
     
-    // Collect whatever user data is available at this point
-    var lastnameEl = document.getElementById("cod-lastname");
-    var phoneEl    = document.getElementById("cod-phone");
-    var emailEl    = document.getElementById("cod-email");
-    
+    // Build user_data with everything available at this point
     var userData = {};
     var fn = firstnameEl.value.trim();
     var ln = lastnameEl ? lastnameEl.value.trim() : "";
     if (fn) userData.fn = fn;
-    if (ln) userData.ln = ln;
-    
-    var rawPhone = phoneEl ? phoneEl.value.replace(/\s/g, "") : "";
-    if (rawPhone && /^0[5-7]\d{8}$/.test(rawPhone)) userData.phone = rawPhone;
+    if (ln) userData.ln = ln; // will be filled if user completed lastname before phone
+    userData.phone = rawPhone; // guaranteed valid at this point
     
     var email = emailEl ? emailEl.value.trim() : "";
     if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) userData.email = email;
