@@ -97,6 +97,7 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
         order_id: orderId,
         content_ids: [String(payload.variant_id)],
         content_type: "product",
+        content_name: product_title || "",
         num_items: Number(payload.quantity),
         delivery_category: "home_delivery",
       },
@@ -174,7 +175,7 @@ module.exports = async function handler(req, res) {
     phone, email,
     wilaya, commune, address, delivery_type,
     shipping_cost, product_price, currency = "DZD",
-    event_id, fbp, fbc, event_source_url,
+    event_id, fbp, fbc, event_source_url, product_title,
   } = body;
 
   // Derive clean first/last name — prefer separate fields, fall back to splitting customer_name
