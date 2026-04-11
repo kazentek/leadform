@@ -266,7 +266,7 @@
             <span>Numéro de Téléphone *</span>
             <span class="cod-label-ar">رقم الهاتف</span>
           </label>
-          <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="14" dir="ltr" />
+          <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="" maxlength="16" dir="ltr" />
           <span class="cod-error-msg" id="cod-phone-err">Numéro invalide (ex: 0551 23 45 67)</span>
         </div>
 
