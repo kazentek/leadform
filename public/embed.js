@@ -712,7 +712,7 @@
         } else {
           btn.disabled = false;
           const frSpan = btn.querySelector(".cod-submit-fr");
-          if (frSpan) frSpan.textContent = "✔ Confirmer ma commande";
+          if (frSpan) frSpan.textContent = "Confirmer ma commande";
           else if (txt) txt.textContent = "Confirmer ma commande";
         }
       }
@@ -901,7 +901,7 @@
           const frSpan = btn.querySelector(".cod-submit-fr");
           if (frSpan) {
             frSpan.textContent = "Erreur — Réessayer";
-            setTimeout(() => { frSpan.textContent = "✔ Confirmer ma commande"; }, 3000);
+            setTimeout(() => { frSpan.textContent = "Confirmer ma commande"; }, 3000);
           } else {
             t.textContent = "Erreur — Réessayer";
             setTimeout(() => { t.textContent = "Confirmer ma commande"; }, 3000);
