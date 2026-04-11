@@ -706,10 +706,14 @@
         const txt = btn.querySelector(".cod-btn-text");
         if (!v.available) {
           btn.disabled = true;
-          if (txt) txt.textContent = "Rupture de stock";
+          const frSpan = btn.querySelector(".cod-submit-fr");
+          if (frSpan) frSpan.textContent = "Rupture de stock";
+          else if (txt) txt.textContent = "Rupture de stock";
         } else {
           btn.disabled = false;
-          if (txt) txt.textContent = "Confirmer ma commande";
+          const frSpan = btn.querySelector(".cod-submit-fr");
+          if (frSpan) frSpan.textContent = "✔ Confirmer ma commande";
+          else if (txt) txt.textContent = "Confirmer ma commande";
         }
       }
     }
@@ -892,7 +896,16 @@
       if(btn) {
         btn.classList.remove("loading"); btn.disabled=false;
         const t=btn.querySelector(".cod-btn-text");
-        if(t) { t.textContent="Erreur — Réessayer"; setTimeout(()=>{ if(t) t.textContent="Confirmer ma commande"; },3000); }
+        if(t) {
+          const frSpan = btn.querySelector(".cod-submit-fr");
+          if (frSpan) {
+            frSpan.textContent = "Erreur — Réessayer";
+            setTimeout(() => { frSpan.textContent = "✔ Confirmer ma commande"; }, 3000);
+          } else {
+            t.textContent = "Erreur — Réessayer";
+            setTimeout(() => { t.textContent = "Confirmer ma commande"; }, 3000);
+          }
+        }
       }
       state.submitting=false;
     }
@@ -1019,12 +1032,8 @@
 
   function updateAllCTAs() {
     const cta = getCTALines();
-    // Update sticky button
-    const stickyFr = document.querySelector(".cod-sticky-fr");
-    const stickyAr = document.querySelector(".cod-sticky-ar");
-    if (stickyFr) stickyFr.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = cta.fr; });
-    if (stickyAr) stickyAr.textContent = cta.ar;
-    // Update inline submit button
+    // Sticky is already rendered correctly at initStickyBar() time — do NOT touch it here
+    // Only update the inline submit button Arabic line
     const submitAr = document.getElementById("cod-submit-ar");
     if (submitAr) submitAr.textContent = cta.ar;
   }
