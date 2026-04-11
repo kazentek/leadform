@@ -370,7 +370,7 @@
 
         <button class="cod-submit-btn" id="cod-submit" type="button">
           <span class="cod-btn-text">
-            <span class="cod-submit-fr">✔ Confirmer ma commande</span>
+            <span class="cod-submit-fr">Confirmer ma commande</span>
             <span class="cod-submit-ar" id="cod-submit-ar"></span>
           </span>
           <div class="cod-spinner"></div>
@@ -879,6 +879,7 @@
       event_id: eventId,
       fbp, fbc,
       event_source_url: window.location.href,
+      product_title: CONFIG.productTitle || "",
       website: document.getElementById("cod-honeypot")?.value || "",
       client_user_agent: navigator.userAgent || "",
     };
