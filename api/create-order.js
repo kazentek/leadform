@@ -97,7 +97,7 @@ async function fireFacebookCAPI(payload, orderId, eventId) {
         order_id: orderId,
         content_ids: [String(payload.variant_id)],
         content_type: "product",
-        content_name: product_title || "",
+        content_name: payload.product_title || "",
         num_items: Number(payload.quantity),
         delivery_category: "home_delivery",
       },
