@@ -164,6 +164,9 @@
       .cod-submit-btn:hover:not(:disabled) { transform: translateY(-2px); background: #F0490E; box-shadow: 0 12px 24px -6px rgba(255,90,31,0.5); }
       .cod-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
       .cod-submit-btn.loading .cod-btn-text { display: none; }
+      .cod-btn-text { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+      .cod-submit-fr { font-size: 17px; font-weight: 800; line-height: 1.2; }
+      .cod-submit-ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; font-size: 12px; font-weight: 600; opacity: 0.88; direction: rtl; line-height: 1.3; }
       .cod-submit-btn.loading .cod-spinner { display: block; }
       .cod-spinner { display: none; width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: codSpin 0.8s linear infinite; }
       @keyframes codSpin { to { transform: rotate(360deg); } }
@@ -266,7 +269,7 @@
             <span>Numéro de Téléphone *</span>
             <span class="cod-label-ar">رقم الهاتف</span>
           </label>
-          <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="16" dir="ltr" />
+          <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="14" dir="ltr" />
           <span class="cod-error-msg" id="cod-phone-err">Numéro invalide (ex: 0551 23 45 67)</span>
         </div>
 
@@ -366,7 +369,10 @@
         </div>
 
         <button class="cod-submit-btn" id="cod-submit" type="button">
-          <span class="cod-btn-text">Confirmer ma commande</span>
+          <span class="cod-btn-text">
+            <span class="cod-submit-fr">✔ Confirmer ma commande</span>
+            <span class="cod-submit-ar" id="cod-submit-ar"></span>
+          </span>
           <div class="cod-spinner"></div>
         </button>
 
@@ -482,7 +488,7 @@
     // Require firstname (2+ chars) AND valid phone — keeps phone at ~100% coverage
     // This mirrors the original trigger logic that gave 8.1/10
     var firstnameOk = firstnameEl && firstnameEl.value.trim().length >= 2;
-    var rawPhone    = phoneEl ? phoneEl.value.replace(/\s/g, "") : "";
+    var rawPhone    = normalizePhoneDigits(phoneEl ? phoneEl.value : "");
     var phoneOk     = /^0[5-7]\d{8}$/.test(rawPhone);
 
     if (!firstnameOk || !phoneOk) return;
@@ -801,7 +807,7 @@
       setError("cod-lastname", "cod-lastname-err", true); valid = false;
     } else { setError("cod-lastname", "cod-lastname-err", false); }
     
-    const rp = phone?.value.replace(/\s/g,"");
+    const rp = normalizePhoneDigits(phone?.value || "");
     if (!rp || !/^0[5-7]\d{8}$/.test(rp)) {
       setError("cod-phone", "cod-phone-err", true); valid = false;
     } else { setError("cod-phone", "cod-phone-err", false); }
@@ -845,7 +851,7 @@
     
     const firstnameVal = document.getElementById("cod-firstname")?.value.trim() || "";
     const lastnameVal  = document.getElementById("cod-lastname")?.value.trim() || "";
-    const phone        = document.getElementById("cod-phone")?.value.replace(/\s/g,"");
+    const phone        = normalizePhoneDigits(document.getElementById("cod-phone")?.value || "");
     const email        = document.getElementById("cod-email")?.value.trim().toLowerCase() || null;
     const address      = document.getElementById("cod-address")?.value.trim();
     const communeVal   = document.getElementById("cod-commune")?.value;
@@ -914,10 +920,25 @@
     fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, payload.email, payload.phone);
   }
 
+  function normalizePhoneDigits(raw) {
+    // Strip everything except digits
+    let digits = raw.replace(/\D/g, "");
+    // +213XXXXXXXXX or 213XXXXXXXXX (12 digits) → 0XXXXXXXXX
+    if (digits.startsWith("213") && digits.length === 12) digits = "0" + digits.slice(3);
+    // 00213XXXXXXXXX (14 digits) → 0XXXXXXXXX
+    if (digits.startsWith("00213") && digits.length === 14) digits = "0" + digits.slice(5);
+    // Clamp to 10 digits max
+    return digits.slice(0, 10);
+  }
+
   function formatPhone(input) {
-    let v=input.value.replace(/\D/g,"").slice(0,10), f="";
-    for(let i=0;i<v.length;i++){ if(i===2||i===4||i===6||i===8) f+=" "; f+=v[i]; }
-    input.value=f;
+    const digits = normalizePhoneDigits(input.value);
+    let f = "";
+    for (let i = 0; i < digits.length; i++) {
+      if (i === 2 || i === 4 || i === 6 || i === 8) f += " ";
+      f += digits[i];
+    }
+    input.value = f;
   }
 
   function bindEvents() {
@@ -969,6 +990,46 @@
   }
 
   /* ─────────────────────────────────────────────
+     TIME-BASED CTA HELPERS (Algeria UTC+1)
+  ───────────────────────────────────────────── */
+  function getAlgeriaHour() {
+    const now = new Date();
+    return { hour: (now.getUTCHours() + 1) % 24, minute: now.getUTCMinutes() };
+  }
+
+  function isDaytime() {
+    const { hour, minute } = getAlgeriaHour();
+    const total = hour * 60 + minute;
+    return total >= 7 * 60 && total < 16 * 60 + 50; // 07:00 – 16:49
+  }
+
+  function getCTALines() {
+    if (isDaytime()) {
+      return {
+        fr: "Commander Maintenant",
+        ar: "كوموندي دكا، نعيطولك ليوم، ونبعثوهالك ليوم ☀️"
+      };
+    } else {
+      return {
+        fr: "Commander Maintenant",
+        ar: "كوموندي دكا، نعيطولك الصبح، ونبعثوهالك الصبح 🌙"
+      };
+    }
+  }
+
+  function updateAllCTAs() {
+    const cta = getCTALines();
+    // Update sticky button
+    const stickyFr = document.querySelector(".cod-sticky-fr");
+    const stickyAr = document.querySelector(".cod-sticky-ar");
+    if (stickyFr) stickyFr.childNodes.forEach(n => { if (n.nodeType === 3) n.textContent = cta.fr; });
+    if (stickyAr) stickyAr.textContent = cta.ar;
+    // Update inline submit button
+    const submitAr = document.getElementById("cod-submit-ar");
+    if (submitAr) submitAr.textContent = cta.ar;
+  }
+
+  /* ─────────────────────────────────────────────
      4. STICKY ACTION BUTTON (Bilingual FR/AR)
   ───────────────────────────────────────────── */
   var atcFired = false;
@@ -977,12 +1038,13 @@
     const stickyBar = document.createElement("div");
     stickyBar.id = "cod-sticky-bar";
     stickyBar.className = "cod-sticky-wrapper";
+    const _cta = getCTALines();
     stickyBar.innerHTML = `
       <button class="cod-sticky-trigger" type="button">
         <span class="cod-sticky-fr">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>Commander Maintenant
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>${_cta.fr}
         </span>
-        <span class="cod-sticky-ar">اطلب الآن</span>
+        <span class="cod-sticky-ar">${_cta.ar}</span>
       </button>
     `;
     document.body.appendChild(stickyBar);
@@ -1058,6 +1120,7 @@
     fetchShopifyVariants().then(()=>{ fetchStock(); });
     bindEvents();
     initStickyBar();
+    updateAllCTAs();
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init);
