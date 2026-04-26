@@ -95,13 +95,13 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Invalid JSON" });
   }
 
-  const { email, order_name, phone } = body;
+  const { email, order_id, order_name, phone } = body;
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: "Invalid email" });
   }
-  if (!order_name && !phone) {
-    return res.status(400).json({ error: "order_name or phone required" });
+  if (!order_id && !order_name && !phone) {
+    return res.status(400).json({ error: "order_id, order_name, or phone required" });
   }
 
   let token;
@@ -116,33 +116,49 @@ module.exports = async function handler(req, res) {
 
   let customerId = null;
 
-  // Strategy 1: look up by order name → get customer id from order
-  if (order_name) {
+  // Strategy 1: direct numeric order ID — fastest, no search, guaranteed hit
+  if (order_id) {
+    try {
+      const orderResp = await fetch(`${apiBase}/orders/${order_id}.json?fields=id,customer`, { headers });
+      if (orderResp.ok) {
+        customerId = (await orderResp.json()).order?.customer?.id || null;
+        if (customerId) console.log(`[update-customer] Customer ${customerId} found via numeric order ID ${order_id}`);
+      } else {
+        console.warn(`[update-customer] Numeric order lookup failed: ${orderResp.status}`);
+      }
+    } catch (e) {
+      console.warn("[update-customer] Numeric order lookup error:", e.message);
+    }
+  }
+
+  // Strategy 2: fallback — search by order name (e.g. "#1001")
+  if (!customerId && order_name) {
     try {
       const orderResp = await fetch(
         `${apiBase}/orders.json?name=${encodeURIComponent(order_name)}&fields=id,customer&limit=1`,
         { headers }
       );
       if (orderResp.ok) {
-        const { orders } = await orderResp.json();
-        customerId = orders?.[0]?.customer?.id || null;
+        customerId = (await orderResp.json()).orders?.[0]?.customer?.id || null;
+        if (customerId) console.log(`[update-customer] Customer ${customerId} found via order name ${order_name}`);
       }
     } catch (e) {
-      console.warn("[update-customer] Order lookup failed:", e.message);
+      console.warn("[update-customer] Order name lookup failed:", e.message);
     }
   }
 
-  // Strategy 2: fallback — look up by phone
+  // Strategy 3: last resort — search by phone
   if (!customerId && phone) {
     try {
-      const cleanPhone  = phone.replace(/\s/g, "");
+      const cleanPhone   = phone.replace(/\s/g, "");
       const shopifyPhone = cleanPhone.startsWith("0") ? "+213" + cleanPhone.slice(1) : cleanPhone;
-      const searchResp  = await fetch(
+      const searchResp   = await fetch(
         `${apiBase}/customers/search.json?query=phone:${encodeURIComponent(shopifyPhone)}&limit=1&fields=id`,
         { headers }
       );
       if (searchResp.ok) {
         customerId = (await searchResp.json()).customers?.[0]?.id || null;
+        if (customerId) console.log(`[update-customer] Customer ${customerId} found via phone fallback`);
       }
     } catch (e) {
       console.warn("[update-customer] Phone lookup failed:", e.message);
@@ -150,8 +166,7 @@ module.exports = async function handler(req, res) {
   }
 
   if (!customerId) {
-    console.warn("[update-customer] Customer not found for order:", order_name);
-    // Still return 200 — client UX should not fail visibly
+    console.warn("[update-customer] ❌ Customer not found — order_id:", order_id, "| order_name:", order_name);
     return res.status(200).json({ success: false, reason: "customer_not_found" });
   }
 
