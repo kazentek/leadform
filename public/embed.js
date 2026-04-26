@@ -190,7 +190,7 @@
       .cod-receipt-total .cod-receipt-val { color: #FF5A1F; }
       
       /* Sticky Button Styles */
-      .cod-sticky-wrapper { position: fixed; bottom: -100px; left: 0; width: 100%; padding: 12px 20px; background: #ffffff; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); z-index: 99999; display: flex; justify-content: center; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid #E5E7EB; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+      .cod-sticky-wrapper { position: fixed; bottom: -100px; left: 0; width: 100%; padding: 12px 20px; background: rgba(255,255,255,0.78); backdrop-filter: blur(12px) saturate(1.6); -webkit-backdrop-filter: blur(12px) saturate(1.6); box-shadow: 0 -4px 24px rgba(0,0,0,0.07); z-index: 99999; display: flex; justify-content: center; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid rgba(229,231,235,0.6); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
       .cod-sticky-wrapper.visible { bottom: 0; }
       .cod-sticky-trigger {
         width: 100%; max-width: 400px; min-height: 60px;
@@ -204,6 +204,21 @@
       .cod-sticky-fr { font-size: 16px; font-weight: 800; line-height: 1.2; }
       .cod-sticky-ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; opacity: 0.92; direction: rtl; }
       
+      /* Post-order email capture */
+      .cod-email-capture { margin-top: 20px; width: 100%; max-width: 360px; background: #F9FAFB; border: 1px dashed #D1D5DB; border-radius: 16px; padding: 18px 20px; text-align: center; animation: slideIn 0.4s ease forwards; }
+      .cod-email-capture-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 4px; }
+      .cod-email-capture-sub { font-size: 12px; color: #9CA3AF; font-weight: 500; margin-bottom: 14px; }
+      .cod-email-capture-row { display: flex; gap: 8px; }
+      .cod-email-capture-input { flex: 1; height: 44px; padding: 0 14px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 14px; font-family: inherit; color: #111827; outline: none; transition: border-color 0.2s; }
+      .cod-email-capture-input:focus { border-color: #FF5A1F; box-shadow: 0 0 0 3px rgba(255,90,31,0.08); }
+      .cod-email-capture-input.cod-error { border-color: #EF4444; background: #FEF2F2; }
+      .cod-email-capture-btn { height: 44px; padding: 0 16px; background: #111827; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; transition: background 0.2s; flex-shrink: 0; }
+      .cod-email-capture-btn:hover:not(:disabled) { background: #1F2937; }
+      .cod-email-capture-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+      .cod-email-capture-done { display: none; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 700; color: #059669; padding: 8px 0; }
+      .cod-email-capture-done.visible { display: flex; }
+      .cod-email-capture-done svg { flex-shrink: 0; }
+
       @media (max-width: 480px) {
         #cod-form-root { border-radius: 16px; border-left: none; border-right: none; border-top: 1px solid #E5E7EB; }
         .cod-row { grid-template-columns: 1fr; gap: 12px; }
@@ -211,6 +226,8 @@
         .cod-header { padding: 24px 20px 16px; }
         .cod-body { padding: 20px; gap: 16px; }
         .cod-sticky-wrapper { padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+        .cod-email-capture-row { flex-direction: column; }
+        .cod-email-capture-btn { width: 100%; }
       }
     `;
     document.head.appendChild(style);
@@ -244,24 +261,14 @@
           <select id="cod-variant-select" class="cod-select"></select>
         </div>
 
-        <!-- Prénom + Nom side by side, both required -->
-        <div class="cod-row">
-          <div class="cod-field-group">
-            <label class="cod-label">
-              <span>Prénom *</span>
-              <span class="cod-label-ar">الاسم</span>
-            </label>
-            <input id="cod-firstname" class="cod-input" type="text" placeholder="Ex: Ahmed" autocomplete="given-name" />
-            <span class="cod-error-msg" id="cod-firstname-err">Entrez votre prénom</span>
-          </div>
-          <div class="cod-field-group">
-            <label class="cod-label">
-              <span>Nom *</span>
-              <span class="cod-label-ar">اللقب</span>
-            </label>
-            <input id="cod-lastname" class="cod-input" type="text" placeholder="Ex: Benali" autocomplete="family-name" />
-            <span class="cod-error-msg" id="cod-lastname-err">Entrez votre nom</span>
-          </div>
+        <!-- Nom Complet — single field -->
+        <div class="cod-field-group">
+          <label class="cod-label">
+            <span>Nom Complet *</span>
+            <span class="cod-label-ar">الاسم الكامل</span>
+          </label>
+          <input id="cod-fullname" class="cod-input" type="text" placeholder="Ex: Ahmed Benali" autocomplete="name" />
+          <span class="cod-error-msg" id="cod-fullname-err">Entrez votre nom complet</span>
         </div>
 
         <div class="cod-field-group">
@@ -271,15 +278,6 @@
           </label>
           <input id="cod-phone" class="cod-input" type="tel" placeholder="05 XX XX XX XX" autocomplete="tel" maxlength="14" dir="ltr" />
           <span class="cod-error-msg" id="cod-phone-err">Numéro invalide (ex: 0551 23 45 67)</span>
-        </div>
-
-        <div class="cod-field-group">
-          <label class="cod-label">
-            <span>Email <span class="cod-optional">(Facultatif)</span></span>
-            <span class="cod-label-ar">البريد الإلكتروني <span class="cod-optional-ar">(اختياري)</span></span>
-          </label>
-          <input id="cod-email" class="cod-input" type="email" placeholder="exemple@email.com" autocomplete="email" dir="ltr" />
-          <span class="cod-error-msg" id="cod-email-err">Veuillez entrer une adresse email valide</span>
         </div>
 
         <div class="cod-row">
@@ -330,13 +328,6 @@
           </div>
         </div>
 
-        <div class="cod-field-group">
-          <label class="cod-label">
-            <span>Adresse détaillée <span class="cod-optional">(Facultatif)</span></span>
-            <span class="cod-label-ar">العنوان التفصيلي <span class="cod-optional-ar">(اختياري)</span></span>
-          </label>
-          <input id="cod-address" class="cod-input" type="text" placeholder="Nom de la rue, numéro de bâtiment..." />
-        </div>
 
         <div class="cod-summary-section">
           <div class="cod-qty-row">
@@ -417,6 +408,21 @@
             <span class="cod-receipt-val" id="succ-total">—</span>
           </div>
         </div>
+
+        <!-- Post-order optional email capture -->
+        <div class="cod-email-capture" id="cod-email-capture">
+          <div class="cod-email-capture-label">📬 Recevoir des mises à jour ?</div>
+          <div class="cod-email-capture-sub">Suivez votre commande par email — facultatif</div>
+          <div class="cod-email-capture-row">
+            <input id="cod-post-email" class="cod-email-capture-input" type="email" placeholder="exemple@email.com" dir="ltr" autocomplete="email" />
+            <button id="cod-post-email-btn" class="cod-email-capture-btn" type="button">Confirmer</button>
+          </div>
+          <div class="cod-email-capture-done" id="cod-email-capture-done">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Email enregistré, merci !
+          </div>
+        </div>
+
       </div>
     `;
   }
@@ -480,33 +486,27 @@
     if (initiateCheckoutFired) return;
     if (typeof fbq !== "function") return;
     
-    var firstnameEl = document.getElementById("cod-firstname");
-    var lastnameEl  = document.getElementById("cod-lastname");
+    var fullnameEl  = document.getElementById("cod-fullname");
     var phoneEl     = document.getElementById("cod-phone");
-    var emailEl     = document.getElementById("cod-email");
 
-    // Require firstname (2+ chars) AND valid phone — keeps phone at ~100% coverage
-    // This mirrors the original trigger logic that gave 8.1/10
-    var firstnameOk = firstnameEl && firstnameEl.value.trim().length >= 2;
-    var rawPhone    = normalizePhoneDigits(phoneEl ? phoneEl.value : "");
-    var phoneOk     = /^0[5-7]\d{8}$/.test(rawPhone);
+    // Require fullname (2+ chars) AND valid phone
+    var fullnameOk = fullnameEl && fullnameEl.value.trim().length >= 2;
+    var rawPhone   = normalizePhoneDigits(phoneEl ? phoneEl.value : "");
+    var phoneOk    = /^0[5-7]\d{8}$/.test(rawPhone);
 
-    if (!firstnameOk || !phoneOk) return;
+    if (!fullnameOk || !phoneOk) return;
     initiateCheckoutFired = true;
     
     var eid = getSessionEventId("InitiateCheckout");
     var productData = getProductData();
     
-    // Build user_data with everything available at this point
+    // Build user_data from fullname + phone
     var userData = {};
-    var fn = firstnameEl.value.trim();
-    var ln = lastnameEl ? lastnameEl.value.trim() : "";
-    if (fn) userData.fn = fn;
-    if (ln) userData.ln = ln; // will be filled if user completed lastname before phone
-    userData.phone = rawPhone; // guaranteed valid at this point
-    
-    var email = emailEl ? emailEl.value.trim() : "";
-    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) userData.email = email;
+    var fullname = fullnameEl.value.trim();
+    var parts = fullname.split(/\s+/);
+    if (parts[0]) userData.fn = parts[0];
+    if (parts.length > 1) userData.ln = parts.slice(1).join(" ");
+    userData.phone = rawPhone;
 
     fbq("track", "InitiateCheckout", productData, { eventID: eid });
     sendCAPIEvent("InitiateCheckout", eid, productData, userData);
@@ -791,10 +791,8 @@
 
   function validate() {
     let valid = true;
-    const firstname = document.getElementById("cod-firstname");
-    const lastname  = document.getElementById("cod-lastname");
+    const fullname  = document.getElementById("cod-fullname");
     const phone     = document.getElementById("cod-phone");
-    const email     = document.getElementById("cod-email");
     const wilaya    = document.getElementById("cod-wilaya");
     const commune   = document.getElementById("cod-commune");
     
@@ -803,23 +801,14 @@
       if (v && !v.available) return false;
     }
 
-    if (!firstname?.value.trim() || firstname.value.trim().length < 2) {
-      setError("cod-firstname", "cod-firstname-err", true); valid = false;
-    } else { setError("cod-firstname", "cod-firstname-err", false); }
-
-    if (!lastname?.value.trim() || lastname.value.trim().length < 2) {
-      setError("cod-lastname", "cod-lastname-err", true); valid = false;
-    } else { setError("cod-lastname", "cod-lastname-err", false); }
+    if (!fullname?.value.trim() || fullname.value.trim().length < 2) {
+      setError("cod-fullname", "cod-fullname-err", true); valid = false;
+    } else { setError("cod-fullname", "cod-fullname-err", false); }
     
     const rp = normalizePhoneDigits(phone?.value || "");
     if (!rp || !/^0[5-7]\d{8}$/.test(rp)) {
       setError("cod-phone", "cod-phone-err", true); valid = false;
     } else { setError("cod-phone", "cod-phone-err", false); }
-
-    const em = email?.value.trim();
-    if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-      setError("cod-email", "cod-email-err", true); valid = false;
-    } else { setError("cod-email", "cod-email-err", false); }
 
     if (!wilaya?.value) {
       setError("cod-wilaya", "cod-wilaya-err", true); valid = false;
@@ -853,11 +842,11 @@
     const btn = document.getElementById("cod-submit");
     if(btn) { btn.classList.add("loading"); btn.disabled=true; }
     
-    const firstnameVal = document.getElementById("cod-firstname")?.value.trim() || "";
-    const lastnameVal  = document.getElementById("cod-lastname")?.value.trim() || "";
+    const fullnameVal  = document.getElementById("cod-fullname")?.value.trim() || "";
+    const nameParts    = fullnameVal.trim().split(/\s+/);
+    const firstNameVal = nameParts[0] || fullnameVal;
+    const lastNameVal  = nameParts.slice(1).join(" ") || ".";
     const phone        = normalizePhoneDigits(document.getElementById("cod-phone")?.value || "");
-    const email        = document.getElementById("cod-email")?.value.trim().toLowerCase() || null;
-    const address      = document.getElementById("cod-address")?.value.trim();
     const communeVal   = document.getElementById("cod-commune")?.value;
     const eventId      = generateEventId();
     const { fbp, fbc } = getFBCookies();
@@ -865,12 +854,12 @@
     const payload = {
       variant_id:    CONFIG.variantId,
       quantity:      state.qty,
-      first_name:    firstnameVal,
-      last_name:     lastnameVal,
-      customer_name: `${firstnameVal} ${lastnameVal}`,
-      phone, email,
+      first_name:    firstNameVal,
+      last_name:     lastNameVal,
+      customer_name: fullnameVal,
+      phone,
       wilaya: state.wilaya, commune: communeVal,
-      address: address || `${communeVal}, ${state.wilaya}`,
+      address: `${communeVal}, ${state.wilaya}`,
       delivery_type: state.deliveryType,
       shipping_cost: state.shippingCost,
       product_price: CONFIG.price,
@@ -912,6 +901,49 @@
     }
   }
 
+  /* ─────────────────────────────────────────────
+     POST-ORDER EMAIL CAPTURE
+  ───────────────────────────────────────────── */
+  function initEmailCapture(orderId, phone) {
+    const btn   = document.getElementById("cod-post-email-btn");
+    const input = document.getElementById("cod-post-email");
+    if (!btn || !input) return;
+
+    btn.addEventListener("click", async function () {
+      const email = input.value.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        input.classList.add("cod-error");
+        input.focus();
+        setTimeout(() => input.classList.remove("cod-error"), 2000);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "...";
+
+      try {
+        await fetch(`${CONFIG.apiBase}/api/update-customer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, order_name: orderId, phone }),
+        });
+      } catch(_) {}
+
+      // Show done state regardless of API result — UX stays positive
+      const row  = document.querySelector(".cod-email-capture-row");
+      const done = document.getElementById("cod-email-capture-done");
+      if (row)  row.style.display  = "none";
+      if (done) done.classList.add("visible");
+
+      console.log("[COD] Post-order email captured ✅");
+    });
+
+    // Also submit on Enter key
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") btn.click();
+    });
+  }
+
   function showSuccess(orderId, payload) {
     const body    = document.getElementById("cod-body");
     const footer  = document.querySelector(".cod-footer");
@@ -931,7 +963,8 @@
       setTimeout(() => { success.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
     }
 
-    fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, payload.email, payload.phone);
+    initEmailCapture(orderId, payload.phone);
+    fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, null, payload.phone);
   }
 
   function normalizePhoneDigits(raw) {
@@ -968,29 +1001,24 @@
     if(btn) btn.addEventListener("click",handleSubmit);
 
     // Clear errors on input for all fields
-    ["cod-firstname","cod-lastname","cod-phone","cod-wilaya","cod-commune","cod-email"].forEach(id=>{
+    ["cod-fullname","cod-phone","cod-wilaya","cod-commune"].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.addEventListener("input",()=>{ el.classList.remove("cod-error"); const e=document.getElementById(id+"-err"); if(e) e.classList.remove("visible"); });
     });
 
     // Lead: fire on first focus of any field
-    ["cod-firstname","cod-lastname","cod-phone","cod-wilaya","cod-commune","cod-address","cod-email"].forEach(function(id) {
+    ["cod-fullname","cod-phone","cod-wilaya","cod-commune"].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener("focus", fireLead, { once: true });
     });
 
-    // InitiateCheckout: fire as soon as first name has 2+ chars
-    var firstnameEl = document.getElementById("cod-firstname");
-    var lastnameEl  = document.getElementById("cod-lastname");
-    var phoneEl     = document.getElementById("cod-phone");
+    // InitiateCheckout: fire as soon as fullname has 2+ chars AND phone is valid
+    var fullnameEl = document.getElementById("cod-fullname");
+    var phoneEl    = document.getElementById("cod-phone");
     
-    if (firstnameEl) {
-      firstnameEl.addEventListener("input", fireInitiateCheckout);
-      firstnameEl.addEventListener("blur", fireInitiateCheckout);
-    }
-    // Also attempt on lastname/phone fill in case user skips firstname tab (edge case)
-    if (lastnameEl) {
-      lastnameEl.addEventListener("blur", fireInitiateCheckout);
+    if (fullnameEl) {
+      fullnameEl.addEventListener("input", fireInitiateCheckout);
+      fullnameEl.addEventListener("blur", fireInitiateCheckout);
     }
     if (phoneEl) {
       phoneEl.addEventListener("blur", fireInitiateCheckout);
@@ -1079,7 +1107,7 @@
       if (root) {
         root.scrollIntoView({ behavior: "smooth", block: "start" });
         setTimeout(() => {
-          const firstInput = document.getElementById("cod-firstname");
+          const firstInput = document.getElementById("cod-fullname");
           if (firstInput) firstInput.focus({ preventScroll: true });
         }, 600);
       }
