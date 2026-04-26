@@ -190,16 +190,20 @@
       .cod-receipt-total .cod-receipt-val { color: #FF5A1F; }
       
       /* Sticky Button Styles */
-      .cod-sticky-wrapper { position: fixed; bottom: -100px; left: 0; width: 100%; padding: 12px 20px; background: rgba(255,255,255,0.78); backdrop-filter: blur(12px) saturate(1.6); -webkit-backdrop-filter: blur(12px) saturate(1.6); box-shadow: 0 -4px 24px rgba(0,0,0,0.07); z-index: 99999; display: flex; justify-content: center; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-top: 1px solid rgba(229,231,235,0.6); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+      .cod-sticky-wrapper { position: fixed; bottom: -100px; left: 0; width: 100%; padding: 12px 20px; background: transparent; z-index: 99999; display: flex; justify-content: center; transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
       .cod-sticky-wrapper.visible { bottom: 0; }
       .cod-sticky-trigger {
         width: 100%; max-width: 400px; min-height: 60px;
-        background: #FF5A1F; color: #fff; border: none; border-radius: 14px;
+        background: rgba(255, 90, 31, 0.82);
+        backdrop-filter: blur(10px) saturate(1.3);
+        -webkit-backdrop-filter: blur(10px) saturate(1.3);
+        color: #fff; border: none; border-radius: 14px;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 2px; box-shadow: 0 4px 15px -4px rgba(255,90,31,0.4);
-        cursor: pointer; transition: transform 0.2s ease; font-family: inherit;
+        gap: 2px; box-shadow: 0 4px 20px -4px rgba(255,90,31,0.35), 0 1px 0 rgba(255,255,255,0.15) inset;
+        cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; font-family: inherit;
         padding: 10px 20px;
       }
+      .cod-sticky-trigger:hover { background: rgba(255, 90, 31, 0.92); }
       .cod-sticky-trigger:active { transform: scale(0.98); }
       .cod-sticky-fr { font-size: 16px; font-weight: 800; line-height: 1.2; }
       .cod-sticky-ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; opacity: 0.92; direction: rtl; }
@@ -225,7 +229,7 @@
         .cod-delivery-grid { grid-template-columns: 1fr; }
         .cod-header { padding: 24px 20px 16px; }
         .cod-body { padding: 20px; gap: 16px; }
-        .cod-sticky-wrapper { padding: 12px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+        .cod-sticky-wrapper { padding: 10px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
         .cod-email-capture-row { flex-direction: column; }
         .cod-email-capture-btn { width: 100%; }
       }
