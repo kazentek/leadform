@@ -194,8 +194,8 @@
       .cod-sticky-wrapper.visible { bottom: 0; }
       .cod-sticky-trigger {
         width: 100%; max-width: 400px; min-height: 60px;
-        background: rgba(255, 90, 31, 0.40);
-        backdrop-filter: blur(5px) saturate(1.3);
+        background: rgba(255, 90, 31, 0.60);
+        backdrop-filter: blur(7px) saturate(1.3);
         -webkit-backdrop-filter: blur(5px) saturate(1.3);
         color: #fff; border: none; border-radius: 14px;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
