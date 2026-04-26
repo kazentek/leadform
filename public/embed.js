@@ -208,6 +208,10 @@
       .cod-sticky-fr { font-size: 16px; font-weight: 800; line-height: 1.2; }
       .cod-sticky-ar { font-family: 'Noto Sans Arabic', Arial, sans-serif; font-size: 13px; font-weight: 600; line-height: 1.3; opacity: 0.92; direction: rtl; }
       
+      /* Multi-order Arabic note */
+      .cod-multiorder-note { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.7; color: #92400E; font-family: 'Noto Sans Arabic', 'Plus Jakarta Sans', system-ui, sans-serif; text-align: right; }
+      .cod-multiorder-note strong { color: #C2410C; }
+
       /* Post-order email capture */
       .cod-email-capture { margin-top: 20px; width: 100%; max-width: 360px; background: #F9FAFB; border: 1px dashed #D1D5DB; border-radius: 16px; padding: 18px 20px; text-align: center; animation: slideIn 0.4s ease forwards; }
       .cod-email-capture-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 4px; }
@@ -268,8 +272,8 @@
         <!-- Nom Complet — single field -->
         <div class="cod-field-group">
           <label class="cod-label">
-            <span>Nom Complet *</span>
-            <span class="cod-label-ar">الاسم الكامل</span>
+            <span>Nom et Prénom *</span>
+            <span class="cod-label-ar">الاسم واللقب</span>
           </label>
           <input id="cod-fullname" class="cod-input" type="text" placeholder="Ex: Ahmed Benali" autocomplete="name" />
           <span class="cod-error-msg" id="cod-fullname-err">Entrez votre nom complet</span>
@@ -372,6 +376,11 @@
         </button>
 
         <div class="cod-terms-text">En passant commande, vous acceptez nos conditions générales de vente.</div>
+
+        <!-- Arabic multi-order shipping note -->
+        <div class="cod-multiorder-note" dir="rtl">
+          ملاحظة: تقدر تزيد دير كوموند على منتج وحد اخر وحنا نجمعوهملك كامل في طرد واحد وتخلص حق توصيل واحد برك 🛍️
+        </div>
       </div>
 
       <div class="cod-footer">
@@ -884,7 +893,9 @@
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error||"Order failed");
       state.submitted = true;
-      showSuccess(data.order_id||data.order?.name||"#COD-"+Date.now().toString().slice(-6), payload);
+      const displayOrderId = data.order_id || data.order?.name || "#COD-" + Date.now().toString().slice(-6);
+      const numericOrderId = data.order?.id || null;
+      showSuccess(displayOrderId, payload, numericOrderId);
       hideStickyBarForever();
     } catch(err) {
       if(btn) {
@@ -908,7 +919,7 @@
   /* ─────────────────────────────────────────────
      POST-ORDER EMAIL CAPTURE
   ───────────────────────────────────────────── */
-  function initEmailCapture(orderId, phone) {
+  function initEmailCapture(numericOrderId, orderName, phone) {
     const btn   = document.getElementById("cod-post-email-btn");
     const input = document.getElementById("cod-post-email");
     if (!btn || !input) return;
@@ -929,7 +940,12 @@
         await fetch(`${CONFIG.apiBase}/api/update-customer`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, order_name: orderId, phone }),
+          body: JSON.stringify({
+            email,
+            order_id:   numericOrderId, // numeric Shopify ID — direct lookup, no search needed
+            order_name: orderName,      // fallback in case numeric ID is unavailable
+            phone,
+          }),
         });
       } catch(_) {}
 
@@ -948,7 +964,7 @@
     });
   }
 
-  function showSuccess(orderId, payload) {
+  function showSuccess(orderId, payload, numericOrderId) {
     const body    = document.getElementById("cod-body");
     const footer  = document.querySelector(".cod-footer");
     const success = document.getElementById("cod-success");
@@ -967,7 +983,9 @@
       setTimeout(() => { success.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
     }
 
-    initEmailCapture(orderId, payload.phone);
+    // Delay email capture init by 1.5s — gives Shopify time to fully persist
+    // the order before update-customer tries to look it up (cold start safety buffer)
+    setTimeout(() => initEmailCapture(numericOrderId, orderId, payload.phone), 1500);
     fireConversionEvents(orderId, payload.total, CONFIG.variantId, payload.event_id, null, payload.phone);
   }
 
