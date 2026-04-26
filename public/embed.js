@@ -195,8 +195,8 @@
       .cod-sticky-trigger {
         width: 100%; max-width: 400px; min-height: 60px;
         background: rgba(255, 90, 31, 0.70);
-        backdrop-filter: blur(5px) saturate(1.3);
-        -webkit-backdrop-filter: blur(5px) saturate(1.3);
+        backdrop-filter: blur(2px) saturate(1.3);
+        -webkit-backdrop-filter: blur(2px) saturate(1.3);
         color: #fff; border: none; border-radius: 14px;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 2px; box-shadow: 0 4px 20px -4px rgba(255,90,31,0.35), 0 1px 0 rgba(255,255,255,0.15) inset;
