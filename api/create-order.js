@@ -208,7 +208,7 @@ module.exports = async function handler(req, res) {
   const apiBase = `https://${SHOP_DOMAIN}/admin/api/2026-01`;
   const headers = { "Content-Type": "application/json", "X-Shopify-Access-Token": token };
 
-  // Find or create customer
+  // Find or create customer — phone is the primary identifier
   let customerId = null;
   try {
     const createResp = await fetch(`${apiBase}/customers.json`, {
@@ -217,24 +217,43 @@ module.exports = async function handler(req, res) {
         customer: {
           first_name: firstName, last_name: lastName,
           phone: shopifyPhone,
-          ...(email ? { email: email.toLowerCase().trim() } : {}),
-          verified_email: false, accepts_marketing: false,
+          verified_email: false,
+          accepts_marketing: false,
+          tags: "COD, phone-only",
         },
       }),
     });
+
     if (createResp.ok) {
       customerId = (await createResp.json()).customer?.id || null;
+      console.log(`[order] ✅ Customer created: ${customerId} — ${shopifyPhone}`);
     } else {
+      // Creation failed — likely phone already exists, search for existing customer
+      const errBody = await createResp.json();
+      const phoneConflict = JSON.stringify(errBody).includes("phone");
+      console.warn(`[order] Customer create failed (${createResp.status}) — ${phoneConflict ? "phone exists, searching..." : JSON.stringify(errBody)}`);
+
       const searchResp = await fetch(
-        `${apiBase}/customers/search.json?query=phone:${encodeURIComponent(shopifyPhone)}&limit=1&fields=id`,
+        `${apiBase}/customers/search.json?query=phone:${encodeURIComponent(shopifyPhone)}&limit=1&fields=id,first_name,last_name`,
         { headers }
       );
       if (searchResp.ok) {
-        customerId = (await searchResp.json()).customers?.[0]?.id || null;
+        const found = (await searchResp.json()).customers?.[0] || null;
+        customerId = found?.id || null;
+        if (customerId) {
+          console.log(`[order] ✅ Existing customer found: ${customerId} — ${shopifyPhone}`);
+          // Update name if it changed
+          await fetch(`${apiBase}/customers/${customerId}.json`, {
+            method: "PUT", headers,
+            body: JSON.stringify({ customer: { id: customerId, first_name: firstName, last_name: lastName } }),
+          }).catch(() => {});
+        } else {
+          console.warn(`[order] ⚠️ Customer not found by phone either — order will be created without customer link`);
+        }
       }
     }
   } catch (e) {
-    console.warn("[order] Customer step failed:", e.message);
+    console.warn("[order] Customer step exception:", e.message);
   }
 
   // Build order
