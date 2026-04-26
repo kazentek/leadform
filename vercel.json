@@ -1,9 +1,10 @@
 {
   "version": 2,
   "functions": {
-    "api/create-order.js": { "maxDuration": 30 },
-    "api/stock.js":        { "maxDuration": 15 },
-    "api/communes.js":     { "maxDuration": 10 }
+    "api/create-order.js":      { "maxDuration": 30 },
+    "api/stock.js":             { "maxDuration": 15 },
+    "api/communes.js":          { "maxDuration": 10 },
+    "api/update-customer.js":   { "maxDuration": 15 }
   },
   "headers": [
     {
