@@ -217,7 +217,7 @@
       .cod-email-capture-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 4px; }
       .cod-email-capture-sub { font-size: 12px; color: #9CA3AF; font-weight: 500; margin-bottom: 14px; }
       .cod-email-capture-row { display: flex; gap: 8px; }
-      .cod-email-capture-input { flex: 1; height: 44px; padding: 0 14px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 14px; font-family: inherit; color: #111827; outline: none; transition: border-color 0.2s; }
+      .cod-email-capture-input { flex: 1; height: 70px; padding: 0 14px; background: #fff; border: 1px solid #E5E7EB; border-radius: 10px; font-size: 18px; font-family: inherit; color: #111827; outline: none; transition: border-color 0.2s; }
       .cod-email-capture-input:focus { border-color: #FF5A1F; box-shadow: 0 0 0 3px rgba(255,90,31,0.08); }
       .cod-email-capture-input.cod-error { border-color: #EF4444; background: #FEF2F2; }
       .cod-email-capture-btn { height: 44px; padding: 0 16px; background: #111827; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; transition: background 0.2s; flex-shrink: 0; }
